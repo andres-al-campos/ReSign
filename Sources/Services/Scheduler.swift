@@ -45,8 +45,21 @@ final class Scheduler {
             Task { await self.buildProject(id: id) }
         }
 
+        notifications.onCleanRetry = { [weak self] id in
+            guard let self else { return }
+            Task { await self.buildProject(id: id, clean: true) }
+        }
+
         notifications.onOpenXcode = {
             NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Xcode.app"))
+        }
+
+        notifications.onOpenProject = { [weak self] id in
+            guard let self,
+                  let project = self.store?.projects.first(where: { $0.id == id }) else { return }
+            // Opens the .xcodeproj/.xcworkspace in Xcode — lands the user in the
+            // right project. macOS can't deep-link to the Signing tab.
+            NSWorkspace.shared.open(project.projectPath)
         }
 
         // Poll signing state every 60s. When the user signs back in, we
@@ -90,10 +103,15 @@ final class Scheduler {
         }
     }
 
-    private func buildProject(id: UUID) async {
+    private func buildProject(id: UUID, clean: Bool = false) async {
         guard let store, let notifications else { return }
         guard inFlight[id] == nil else { return }
         guard let project = store.projects.first(where: { $0.id == id }) else { return }
+
+        // Clean & Retry: drop ReSign's stale DerivedData cache before rebuilding.
+        if clean {
+            BuildRunner.purgeDerivedData(for: project)
+        }
 
         // Fast pre-flight: is Xcode signed in? Saves ~30s of xcodebuild
         // churn when the answer is "No Accounts".
@@ -144,11 +162,24 @@ final class Scheduler {
                     self.logStore?.save(log: displayLog, for: projectID, name: projectName)
                     store.markBuildSucceeded(id: projectID, profileExpiresAt: profileExpiresAt)
                     notifications.sendSuccessNotification(project: project)
-                case .failure(let phase, let message):
+                case .failure(let phase, let message, let kind):
                     let displayLog = BuildOutputFilter.extractErrors(from: log)
                     self.logStore?.save(log: displayLog, for: projectID, name: projectName)
                     store.markBuildFailed(id: projectID, error: "\(phase.rawValue): \(message)")
-                    notifications.sendFailureNotification(project: project, message: message)
+                    // Match the notification's action to how the failure is fixed.
+                    switch kind {
+                    case .signedOut:
+                        // Global fix in Xcode → "Open Xcode".
+                        notifications.sendSignedOutNotification()
+                    case .projectSigning:
+                        // Fixed in this project's signing settings → "Open Project in Xcode".
+                        notifications.sendProjectSigningNotification(project: project, message: message)
+                    case .staleCache:
+                        // Fixable automatically → "Clean & Retry".
+                        notifications.sendStaleCacheNotification(project: project, message: message)
+                    case .generic:
+                        notifications.sendFailureNotification(project: project, message: message)
+                    }
                 case .cancelled:
                     self.logStore?.save(log: log, for: projectID, name: projectName)
                     store.markBuildCancelled(id: projectID)

@@ -78,7 +78,8 @@ enum BuildRunner {
         }
 
         guard buildResult.exitCode == 0 else {
-            return (.failure(phase: .xcodebuild, message: classifyBuildError(buildResult.output)), fullLog.value)
+            let classified = classifyBuildError(buildResult.output)
+            return (.failure(phase: .xcodebuild, message: classified.message, kind: classified.kind), fullLog.value)
         }
 
         let productsDir = derivedDataDir
@@ -179,7 +180,8 @@ enum BuildRunner {
         }
 
         guard result.exitCode == 0 else {
-            return .failure(phase: .xcodebuild, message: classifyBuildError(result.output))
+            let classified = classifyBuildError(result.output)
+            return .failure(phase: .xcodebuild, message: classified.message, kind: classified.kind)
         }
 
         let expiry = readProfileExpiry(appPath: stagedApp)
@@ -213,6 +215,14 @@ enum BuildRunner {
             .appendingPathComponent(project.id.uuidString, isDirectory: true)
     }
 
+    /// Deletes ReSign's own DerivedData cache for a project. Only touches the
+    /// directory ReSign created under ~/Library/Caches/ReSign — never the
+    /// user's Xcode DerivedData. Used by "Clean & Retry" after a stale-cache
+    /// failure. Missing directory is a no-op.
+    static func purgeDerivedData(for project: ManagedProject) {
+        try? FileManager.default.removeItem(at: derivedDataDirectory(for: project))
+    }
+
     /// Finds the built .app inside our controlled products directory.
     /// Picks the most recently modified .app in case multiple targets produced one.
     private static func findAppBundle(in productsDir: URL) -> URL? {
@@ -231,31 +241,31 @@ enum BuildRunner {
         }
     }
 
-    private static func classifyBuildError(_ output: String) -> String {
+    private static func classifyBuildError(_ output: String) -> (message: String, kind: BuildErrorKind) {
         if output.contains("No Accounts") {
-            return "Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in with your Apple ID, then try again."
+            return ("Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in with your Apple ID, then try again.", .signedOut)
         }
         if output.contains("No profiles for") || output.contains("no provisioning profiles") {
-            return "No provisioning profile found. Open Xcode, sign in under Settings → Accounts, and build the project once manually to create a profile."
+            return ("No provisioning profile found. Open the project in Xcode and build it once manually to create a profile.", .projectSigning)
         }
         if output.contains("provisioning profile") && output.contains("expired") {
-            return "Provisioning profile expired. Open Xcode → Settings → Accounts → Manage Certificates to renew."
+            return ("Provisioning profile expired. Open the project in Xcode; Xcode regenerates a free-tier profile on the next build.", .projectSigning)
         }
         if output.contains("SIGNING") || output.contains("code sign") || output.contains("CodeSign") {
-            return "Code signing failed. Open Xcode, select your team under Signing & Capabilities, and verify the bundle ID matches your profile."
+            return ("Code signing failed. Open the project in Xcode, select your team under Signing & Capabilities, and verify the bundle ID matches your profile.", .projectSigning)
         }
         if output.contains("Build input file cannot be found") {
-            return "Source file missing. Check the project for broken file references in Xcode."
+            return ("Source file missing. Check the project for broken file references in Xcode.", .generic)
         }
         if output.contains("could not find module") {
-            return "Missing Swift module or dependency. Try cleaning derived data or resolving packages in Xcode."
+            return ("Missing Swift module or dependency. This is often a stale build cache — try Clean & Retry, or resolve packages in Xcode.", .staleCache)
         }
         // Extract last error: line
         let lines = output.components(separatedBy: "\n")
         if let errorLine = lines.last(where: { $0.contains("error:") }) {
-            return String(errorLine.prefix(200))
+            return (String(errorLine.prefix(200)), .generic)
         }
-        return "Build failed. Check the build log for details."
+        return ("Build failed. Check the build log for details.", .generic)
     }
 
     private static func run(

@@ -4,7 +4,9 @@ import Foundation
 @MainActor
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     var onRetry: ((UUID) -> Void)?
+    var onCleanRetry: ((UUID) -> Void)?
     var onOpenXcode: (() -> Void)?
+    var onOpenProject: ((UUID) -> Void)?
 
     /// De-duplication: we only want one signed-out notification visible at a
     /// time, no matter how many projects were due when we noticed.
@@ -35,6 +37,36 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().add(request)
     }
 
+    func sendProjectSigningNotification(project: ManagedProject, message: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "Build Failed — \(project.name)"
+        content.body = message
+        content.sound = .default
+        content.categoryIdentifier = "PROJECT_SIGNING"
+        content.userInfo = ["projectID": project.id.uuidString]
+        let request = UNNotificationRequest(
+            identifier: "failure-\(project.id)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func sendStaleCacheNotification(project: ManagedProject, message: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "Build Failed — \(project.name)"
+        content.body = message
+        content.sound = .default
+        content.categoryIdentifier = "STALE_CACHE"
+        content.userInfo = ["projectID": project.id.uuidString]
+        let request = UNNotificationRequest(
+            identifier: "failure-\(project.id)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
     func sendSuccessNotification(project: ManagedProject) {
         let content = UNMutableNotificationContent()
         content.title = "\(project.name) installed"
@@ -50,7 +82,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     func sendSignedOutNotification() {
         let content = UNMutableNotificationContent()
         content.title = "Not signed in to Xcode"
-        content.body = "ReSign paused scheduled builds. Open Xcode → Settings → Accounts and sign in; builds resume automatically."
+        content.body = "Open Xcode → Settings → Accounts and sign in with your Apple ID; builds resume automatically once you're signed in."
         content.sound = .default
         content.categoryIdentifier = "SIGNED_OUT"
         let request = UNNotificationRequest(
@@ -77,17 +109,36 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     ) {
         defer { completionHandler() }
 
-        if response.actionIdentifier == "OPEN_XCODE" {
+        let action = response.actionIdentifier
+        let category = response.notification.request.content.categoryIdentifier
+        // A plain click on the notification body reports the default action; we
+        // treat it as the category's primary action so the whole banner is a
+        // clickable shortcut, not just the small button.
+        let isBodyClick = action == UNNotificationDefaultActionIdentifier
+        let projectID = (response.notification.request.content.userInfo["projectID"] as? String)
+            .flatMap(UUID.init(uuidString:))
+
+        // Signed-out: button or body-click opens Xcode.
+        if action == "OPEN_XCODE" || (isBodyClick && category == "SIGNED_OUT") {
             Task { @MainActor in self.onOpenXcode?() }
             return
         }
 
-        guard response.actionIdentifier == "RETRY_BUILD",
-              let idString = response.notification.request.content.userInfo["projectID"] as? String,
-              let id = UUID(uuidString: idString) else { return }
+        guard let projectID else { return }
 
-        Task { @MainActor in
-            self.onRetry?(id)
+        // Project-signing: button or body-click opens the project in Xcode.
+        if action == "OPEN_PROJECT" || (isBodyClick && category == "PROJECT_SIGNING") {
+            Task { @MainActor in self.onOpenProject?(projectID) }
+            return
+        }
+
+        if action == "CLEAN_RETRY" {
+            Task { @MainActor in self.onCleanRetry?(projectID) }
+            return
+        }
+
+        if action == "RETRY_BUILD" {
+            Task { @MainActor in self.onRetry?(projectID) }
         }
     }
 
@@ -118,6 +169,30 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             options: []
         )
 
-        UNUserNotificationCenter.current().setNotificationCategories([failureCategory, signedOutCategory])
+        let openProjectAction = UNNotificationAction(
+            identifier: "OPEN_PROJECT",
+            title: "Open Project in Xcode",
+            options: [.foreground]
+        )
+        let projectSigningCategory = UNNotificationCategory(
+            identifier: "PROJECT_SIGNING",
+            actions: [openProjectAction],
+            intentIdentifiers: [],
+            options: []
+        )
+
+        let cleanRetryAction = UNNotificationAction(
+            identifier: "CLEAN_RETRY",
+            title: "Clean & Retry",
+            options: [.foreground]
+        )
+        let staleCacheCategory = UNNotificationCategory(
+            identifier: "STALE_CACHE",
+            actions: [cleanRetryAction],
+            intentIdentifiers: [],
+            options: []
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([failureCategory, signedOutCategory, projectSigningCategory, staleCacheCategory])
     }
 }
