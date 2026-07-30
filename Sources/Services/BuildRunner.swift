@@ -260,26 +260,28 @@ enum BuildRunner {
         if output.contains("could not find module") {
             return ("Missing Swift module or dependency. This is often a stale build cache — try Clean & Retry, or resolve packages in Xcode.", .staleCache)
         }
+        // xcode-select points at the Command Line Tools instead of full Xcode —
+        // common after an OS/Xcode update. Retrying can't fix it; the user has to
+        // repoint xcode-select once.
+        if output.contains("requires Xcode") || output.contains("active developer directory") {
+            return ("xcodebuild can't find Xcode. Run: sudo xcode-select -s /Applications/Xcode.app — then ReSign builds resume automatically.", .generic)
+        }
+        // A build tool the project's build.sh needs (e.g. xcodegen) isn't
+        // installed, or isn't on the login-item PATH. The message already carries
+        // the fix ("Install with: brew install …"); surface it verbatim rather
+        // than burying it under the generic "check the log".
+        if output.contains("not installed. Install with:") {
+            let lines = output.components(separatedBy: "\n")
+            if let line = lines.last(where: { $0.contains("not installed. Install with:") }) {
+                return (String(line.drop(while: { $0 == " " }).prefix(200)), .generic)
+            }
+        }
         // Extract last error: line
         let lines = output.components(separatedBy: "\n")
         if let errorLine = lines.last(where: { $0.contains("error:") }) {
             return (String(errorLine.prefix(200)), .generic)
         }
         return ("Build failed. Check the build log for details.", .generic)
-    }
-
-    /// Environment for spawned build tools. A menu-bar app launched by launchd
-    /// inherits a minimal PATH (`/usr/bin:/bin:...`) with no Homebrew, so a
-    /// project's build.sh can't find `xcodegen` and friends — the same command
-    /// works fine from the user's terminal. We prepend the common Homebrew bin
-    /// dirs (Apple Silicon + Intel) to whatever PATH we did inherit.
-    private static func childEnvironment() -> [String: String] {
-        var env = ProcessInfo.processInfo.environment
-        let brewPaths = ["/opt/homebrew/bin", "/usr/local/bin"]
-        let existing = env["PATH"].map { $0.split(separator: ":").map(String.init) } ?? []
-        let merged = brewPaths + existing.filter { !brewPaths.contains($0) }
-        env["PATH"] = merged.joined(separator: ":")
-        return env
     }
 
     private static func run(
@@ -290,7 +292,7 @@ enum BuildRunner {
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/env")
         process.arguments = arguments
-        process.environment = childEnvironment()
+        process.environment = ProcessEnvironment.childEnvironment()
         if let cwd { process.currentDirectoryURL = cwd }
 
         let stdoutPipe = Pipe()
@@ -402,5 +404,21 @@ private final class OutputAccumulator: @unchecked Sendable {
         lock.lock()
         _value += text
         lock.unlock()
+    }
+}
+
+enum ProcessEnvironment {
+    /// Environment for spawned build/device tools. A menu-bar app launched by
+    /// launchd inherits a minimal PATH (`/usr/bin:/bin:...`) with no Homebrew, so
+    /// a subprocess (or a project's build.sh) can't find `xcodegen` and friends —
+    /// the same command works fine from the user's terminal. We prepend the common
+    /// Homebrew bin dirs (Apple Silicon + Intel) to whatever PATH we inherited.
+    static func childEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        let brewPaths = ["/opt/homebrew/bin", "/usr/local/bin"]
+        let existing = env["PATH"].map { $0.split(separator: ":").map(String.init) } ?? []
+        let merged = brewPaths + existing.filter { !brewPaths.contains($0) }
+        env["PATH"] = merged.joined(separator: ":")
+        return env
     }
 }

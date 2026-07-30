@@ -45,6 +45,7 @@ enum DeviceLocator {
             let process = Process()
             process.executableURL = URL(filePath: "/usr/bin/env")
             process.arguments = arguments
+            process.environment = ProcessEnvironment.childEnvironment()
             let pipe = Pipe()
             let errorPipe = Pipe()
             process.standardOutput = pipe
