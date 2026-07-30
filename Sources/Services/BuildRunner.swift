@@ -268,6 +268,20 @@ enum BuildRunner {
         return ("Build failed. Check the build log for details.", .generic)
     }
 
+    /// Environment for spawned build tools. A menu-bar app launched by launchd
+    /// inherits a minimal PATH (`/usr/bin:/bin:...`) with no Homebrew, so a
+    /// project's build.sh can't find `xcodegen` and friends — the same command
+    /// works fine from the user's terminal. We prepend the common Homebrew bin
+    /// dirs (Apple Silicon + Intel) to whatever PATH we did inherit.
+    private static func childEnvironment() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        let brewPaths = ["/opt/homebrew/bin", "/usr/local/bin"]
+        let existing = env["PATH"].map { $0.split(separator: ":").map(String.init) } ?? []
+        let merged = brewPaths + existing.filter { !brewPaths.contains($0) }
+        env["PATH"] = merged.joined(separator: ":")
+        return env
+    }
+
     private static func run(
         _ arguments: [String],
         cwd: URL? = nil,
@@ -276,6 +290,7 @@ enum BuildRunner {
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/env")
         process.arguments = arguments
+        process.environment = childEnvironment()
         if let cwd { process.currentDirectoryURL = cwd }
 
         let stdoutPipe = Pipe()
