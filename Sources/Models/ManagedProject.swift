@@ -2,8 +2,8 @@ import Foundation
 
 struct ManagedProject: Identifiable, Codable {
     let id: UUID
-    let name: String
-    let projectPath: URL
+    var name: String
+    var projectPath: URL
     var lastBuiltAt: Date?
     var lastError: String?
     var profileExpiresAt: Date?

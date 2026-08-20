@@ -29,22 +29,64 @@ final class ProjectStore {
             return
         }
         let scanRoot = URL(filePath: path)
-        let discovered = try ProjectDiscovery.discoverProjects(in: scanRoot)
+        // ReSign manages other projects, not itself.
+        let selfPath = scanRoot.appendingPathComponent("ReSign")
+        let discovered = try ProjectDiscovery.discoverProjects(in: scanRoot, excludedPaths: [selfPath])
 
-        // Guard: if scan returned nothing, don't wipe existing projects
-        guard !discovered.isEmpty else { return }
+        // An empty scan is ambiguous: it means either "this root genuinely has
+        // no projects" or "the root couldn't be read" — an unmounted volume, a
+        // revoked sandbox permission. Only the second is a reason to keep what
+        // we have, since wiping every project's build history on a transient
+        // I/O error can't be undone. So check the root rather than the result.
+        if discovered.isEmpty, !projects.isEmpty, !isReadable(scanRoot) { return }
 
-        // Keep existing state for known projects, add new ones
+        // Keep existing state for known projects, add new ones. Keyed by path
+        // rather than name: recursive scanning makes duplicate names plausible
+        // (two repos each with ios/App.xcodeproj), and keying by name would
+        // collapse them into one entry and discard a project's build state.
         var updated: [ManagedProject] = []
+        var claimed: Set<UUID> = []
         for disc in discovered {
-            if let existing = projects.first(where: { $0.name == disc.name }) {
-                updated.append(existing)
+            if let existing = matchExisting(disc, claimed: claimed) {
+                claimed.insert(existing.id)
+                // Adopt the freshly discovered name/path — an xcodegen rename
+                // or a moved repo should update rather than fork the entry.
+                var merged = existing
+                merged.name = disc.name
+                merged.projectPath = disc.projectPath
+                updated.append(merged)
             } else {
                 updated.append(disc)
             }
         }
         projects = updated
         save()
+    }
+
+    /// The persisted entry for a freshly discovered project, if any.
+    ///
+    /// Path is the identity. The name fallback covers a project that moved on
+    /// disk, and only fires when it is unambiguous — one unclaimed entry with
+    /// that name — so two same-named projects can never inherit each other's
+    /// history.
+    private func matchExisting(_ disc: ManagedProject, claimed: Set<UUID>) -> ManagedProject? {
+        let discPath = Self.canonical(disc.projectPath)
+        if let byPath = projects.first(where: {
+            !claimed.contains($0.id) && Self.canonical($0.projectPath) == discPath
+        }) {
+            return byPath
+        }
+        let byName = projects.filter { !claimed.contains($0.id) && $0.name == disc.name }
+        return byName.count == 1 ? byName[0] : nil
+    }
+
+    private static func canonical(_ url: URL) -> String {
+        url.standardizedFileURL.resolvingSymlinksInPath().path
+    }
+
+    /// Whether the scan root can actually be listed, as opposed to being empty.
+    private func isReadable(_ url: URL) -> Bool {
+        (try? FileManager.default.contentsOfDirectory(atPath: url.path)) != nil
     }
 
     func markBuildStarted(id: UUID) {
@@ -101,6 +143,15 @@ final class ProjectStore {
     private func load() {
         guard let data = try? Data(contentsOf: storeURL),
               let saved = try? JSONDecoder().decode([ManagedProject].self, from: data) else { return }
-        projects = saved.filter { ProjectDiscovery.isIOSProject(xcodeprojURL: $0.projectPath) }
+        // Decided the same way discovery decides, so a cleaned xcodegen project
+        // (no .xcodeproj on disk, project.yml still there) survives on the
+        // yml's evidence rather than on isIOSProject's permissive
+        // can't-read-the-pbxproj fallback.
+        projects = saved.filter {
+            ProjectDiscovery.isIOSCandidate(
+                dir: $0.projectPath.deletingLastPathComponent(),
+                xcodeprojURL: $0.projectPath
+            )
+        }
     }
 }

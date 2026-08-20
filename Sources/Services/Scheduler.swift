@@ -59,7 +59,17 @@ final class Scheduler {
                   let project = self.store?.projects.first(where: { $0.id == id }) else { return }
             // Opens the .xcodeproj/.xcworkspace in Xcode — lands the user in the
             // right project. macOS can't deep-link to the Signing tab.
-            NSWorkspace.shared.open(project.projectPath)
+            //
+            // For an xcodegen project the .xcodeproj is generated and may not
+            // exist yet (after `build.sh clean`). NSWorkspace.open would fail
+            // silently on that path, so fall back to the containing directory —
+            // the user lands next to project.yml and build.sh instead of
+            // nothing happening.
+            if FileManager.default.fileExists(atPath: project.projectPath.path) {
+                NSWorkspace.shared.open(project.projectPath)
+            } else {
+                NSWorkspace.shared.open(project.projectPath.deletingLastPathComponent())
+            }
         }
 
         // Poll signing state every 60s. When the user signs back in, we
