@@ -107,7 +107,7 @@ final class Scheduler {
 
     private func checkDueProjects() async {
         guard let store else { return }
-        let due = store.projects.filter { $0.isDue && !$0.isBuilding }
+        let due = store.projects.filter { $0.isDue && !$0.isBuilding && !$0.isHidden }
         for project in due {
             await buildProject(id: project.id)
         }
@@ -219,9 +219,12 @@ final class Scheduler {
         notifications?.clearSignedOutNotification()
 
         // Drain the pending-retry set by kicking off builds for each.
+        // Skip anything hidden after it was queued — this is an automatic
+        // trigger, so a parked project shouldn't wake up and build.
         let toRetry = pendingRetry
         pendingRetry.removeAll()
         for id in toRetry {
+            guard store?.projects.first(where: { $0.id == id })?.isHidden != true else { continue }
             Task { await self.buildProject(id: id) }
         }
     }

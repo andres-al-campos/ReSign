@@ -13,6 +13,9 @@ struct ManagedProject: Identifiable, Codable {
     /// provisioning profile (expiry didn't advance). The build itself is fine;
     /// this surfaces "Apple said meh, rerun in Xcode or try again later."
     var stuckOnOldProfile: Bool = false
+    /// Parked by the user: skipped by automatic rebuilds, still buildable on
+    /// demand via Rebuild. Defaults false so existing projects.json decodes.
+    var isHidden: Bool = false
 
     var nextDueAt: Date? {
         if let profileExpiresAt {

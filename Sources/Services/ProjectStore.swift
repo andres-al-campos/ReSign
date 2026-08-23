@@ -89,6 +89,13 @@ final class ProjectStore {
         (try? FileManager.default.contentsOfDirectory(atPath: url.path)) != nil
     }
 
+    /// Parks or unparks a project. Hidden projects are skipped by the
+    /// scheduler's automatic passes but still build via Rebuild.
+    func setHidden(id: UUID, _ hidden: Bool) {
+        update(id: id) { $0.isHidden = hidden }
+        save()
+    }
+
     func markBuildStarted(id: UUID) {
         update(id: id) { $0.isBuilding = true; $0.buildPhase = "Starting..." }
     }
