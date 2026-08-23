@@ -110,9 +110,18 @@ enum BuildRunner {
         }
 
         guard installResult.exitCode == 0 else {
-            let msg = installResult.output.contains("not found")
-                ? "Device lost during install. Make sure your phone stays unlocked."
-                : String(installResult.output.suffix(300))
+            // classifyBuildError also recognises the free-provisioning app limit,
+            // which surfaces here rather than during xcodebuild.
+            let msg: String
+            if installResult.output.contains("MIFreeProfileValidatedAppTracker")
+                || installResult.output.contains("maximum number of apps")
+                || installResult.output.contains("free development profiles") {
+                msg = classifyBuildError(installResult.output).message
+            } else if installResult.output.contains("not found") {
+                msg = "Device lost during install. Make sure your phone stays unlocked."
+            } else {
+                msg = String(installResult.output.suffix(300))
+            }
             return (.failure(phase: .deviceInstall, message: msg), fullLog.value)
         }
 
@@ -265,6 +274,15 @@ enum BuildRunner {
         // repoint xcode-select once.
         if output.contains("requires Xcode") || output.contains("active developer directory") {
             return ("xcodebuild can't find Xcode. Run: sudo xcode-select -s /Applications/Xcode.app — then ReSign builds resume automatically.", .generic)
+        }
+        // A free Apple ID may only have 3 apps installed on a device at once.
+        // Worth catching specifically: install scripts tend to read the refusal
+        // as a flaky device link and retry it, so the surfaced message blames a
+        // sleeping phone. Retrying never helps — a slot has to be freed first.
+        if output.contains("MIFreeProfileValidatedAppTracker")
+            || output.contains("maximum number of apps")
+            || output.contains("free development profiles") {
+            return ("Free Apple ID limit reached — a free account allows only 3 apps installed per device at a time. Delete one of the other ReSign-installed apps from your phone, then rebuild. A paid Apple Developer account removes the limit.", .generic)
         }
         // A build tool the project's build.sh needs (e.g. xcodegen) isn't
         // installed, or isn't on the login-item PATH. The message already carries
