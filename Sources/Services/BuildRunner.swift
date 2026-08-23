@@ -115,7 +115,11 @@ enum BuildRunner {
             let msg: String
             if installResult.output.contains("MIFreeProfileValidatedAppTracker")
                 || installResult.output.contains("free development profiles") {
-                msg = classifyBuildError(installResult.output).message
+                // The .app is right here, so confirm the tier from its embedded
+                // profile rather than inferring it from the log marker alone.
+                msg = isFreeProvisioning(appPath: appPath) == true
+                    ? "Free Apple ID limit reached — a free account allows only 3 apps installed per device at a time. Delete another ReSign-installed app from your phone, then rebuild."
+                    : classifyBuildError(installResult.output).message
             } else if installResult.output.contains("not found") {
                 msg = "Device lost during install. Make sure your phone stays unlocked."
             } else {
@@ -188,6 +192,17 @@ enum BuildRunner {
         }
 
         guard result.exitCode == 0 else {
+            // Confirm the tier from the staged app's profile before blaming the
+            // free-tier cap; the log marker alone only suggests it.
+            if (result.output.contains("MIFreeProfileValidatedAppTracker")
+                || result.output.contains("free development profiles")),
+               isFreeProvisioning(appPath: stagedApp) == true {
+                return .failure(
+                    phase: .deviceInstall,
+                    message: "Free Apple ID limit reached — a free account allows only 3 apps installed per device at a time. Delete another ReSign-installed app from your phone, then rebuild.",
+                    kind: .generic
+                )
+            }
             let classified = classifyBuildError(result.output)
             return .failure(phase: .xcodebuild, message: classified.message, kind: classified.kind)
         }
@@ -196,7 +211,24 @@ enum BuildRunner {
         return .success(appBundlePath: stagedApp, profileExpiresAt: expiry)
     }
 
+    /// Whether the app's embedded profile was issued to a free Apple ID.
+    ///
+    /// Free-tier profiles are valid for 7 days; paid Developer Program profiles
+    /// run a year. Nothing in the plist states the tier outright, so the
+    /// validity window is the signal — anything under a month is free-tier.
+    /// Returns nil when there's no profile to read.
+    static func isFreeProvisioning(appPath: URL) -> Bool? {
+        guard let plist = readProfilePlist(appPath: appPath),
+              let created = plist["CreationDate"] as? Date,
+              let expires = plist["ExpirationDate"] as? Date else { return nil }
+        return expires.timeIntervalSince(created) < 30 * 24 * 60 * 60
+    }
+
     private static func readProfileExpiry(appPath: URL) -> Date? {
+        readProfilePlist(appPath: appPath)?["ExpirationDate"] as? Date
+    }
+
+    private static func readProfilePlist(appPath: URL) -> [String: Any]? {
         let profilePath = appPath.appendingPathComponent("embedded.mobileprovision")
         guard FileManager.default.fileExists(atPath: profilePath.path) else { return nil }
 
@@ -210,9 +242,7 @@ enum BuildRunner {
         process.waitUntilExit()
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        guard let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let expirationDate = plist["ExpirationDate"] as? Date else { return nil }
-        return expirationDate
+        return try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
     }
 
     /// Per-project derived data directory. Keyed by project UUID so rebuilds are deterministic
