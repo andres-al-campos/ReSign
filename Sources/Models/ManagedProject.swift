@@ -55,7 +55,10 @@ struct ManagedProject: Identifiable, Codable {
         return "exp \(dateStr) (\(daysUntilExpiry)d left)"
     }
 
+    // Persisted fields. isBuilding and buildPhase are deliberately absent:
+    // they're transient and must not survive a restart. isHidden must.
     enum CodingKeys: String, CodingKey {
         case id, name, projectPath, lastBuiltAt, lastError, profileExpiresAt, stuckOnOldProfile
+        case isHidden
     }
 }

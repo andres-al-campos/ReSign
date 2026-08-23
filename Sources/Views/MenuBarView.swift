@@ -11,6 +11,7 @@ struct MenuBarView: View {
     @State private var swipedID: UUID?
     @State private var projectListContentHeight: CGFloat = 0
     @State private var cardHeight: CGFloat = 0
+    @State private var headerHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -120,14 +121,16 @@ struct MenuBarView: View {
             .frame(height: min(max(projectListContentHeight, 44), viewportCap))
             .onPreferenceChange(ContentHeightKey.self) { projectListContentHeight = $0 }
             .onPreferenceChange(CardHeightKey.self) { cardHeight = $0 }
+            .onPreferenceChange(HeaderHeightKey.self) { headerHeight = $0 }
         }
     }
 
-    /// Height cap for the scroll area: three cards plus their dividers, falling
-    /// back to the old fixed 320 until the first card measurement lands.
+    /// Height cap for the scroll area: three cards, their dividers, and the
+    /// "Active" header, so three full cards sit below it rather than the header
+    /// eating into the third. Falls back to a fixed 320 until measured.
     private var viewportCap: CGFloat {
         guard cardHeight > 0 else { return 320 }
-        return cardHeight * 3 + 3
+        return cardHeight * 3 + 3 + headerHeight
     }
 
     @ViewBuilder
@@ -139,6 +142,11 @@ struct MenuBarView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 4)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: HeaderHeightKey.self, value: proxy.size.height)
+                }
+            )
     }
 
     @ViewBuilder
@@ -170,6 +178,14 @@ struct MenuBarView: View {
                 Color.clear.preference(key: CardHeightKey.self, value: proxy.size.height)
             }
         )
+    }
+}
+
+// Section header height, so the viewport can fit three whole cards beneath it.
+private struct HeaderHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
