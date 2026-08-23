@@ -173,6 +173,14 @@ struct MenuBarView: View {
     }
 }
 
+// Card's natural height, used to size the fixed-height swipe row around it.
+private struct RowHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 // Measures a single collapsed card so the viewport can be sized to show three
 // of them — matching the free-provisioning limit of 3 apps per device.
 private struct CardHeightKey: PreferenceKey {
@@ -210,7 +218,12 @@ private struct ProjectCardRow: View {
 
     @State private var isHovered = false
     @State private var offset: CGFloat = 0
-    @GestureState private var dragOffset: CGFloat = 0
+    @State private var rowHeight: CGFloat = 44
+    /// Live finger travel during a drag. Plain @State rather than @GestureState:
+    /// @GestureState zeroes itself the instant the finger lifts, before the
+    /// settle animation on `offset` has started, which shows one frame at the
+    /// rest position — the stutter.
+    @State private var dragOffset: CGFloat = 0
 
     /// Width of the revealed action button. Wide enough for icon + label.
     private static let actionWidth: CGFloat = 76
@@ -239,46 +252,108 @@ private struct ProjectCardRow: View {
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            // Action layer, revealed as the card slides left. Full opacity even
-            // for a hidden project, so "Show" stays legible.
-            SwipeActionButton(isHidden: project.isHidden, width: Self.actionWidth) {
-                onToggleHidden()
-                onSwipeChanged(false)
-            }
-
-            cardContent
-                .background(.background)
-                .offset(x: offset + dragOffset)
-                .gesture(swipeGesture)
+        VStack(spacing: 0) {
+            swipeRow
+            expandedLog
         }
+    }
+
+    private var swipeRow: some View {
+        // The card and its action sit side by side in a row one action-width
+        // wider than the viewport, shifted left to reveal the button. Stacking
+        // them instead would show both at once: the popover's material
+        // background is translucent, so the card can't occlude what's behind it.
+        GeometryReader { proxy in
+            HStack(spacing: 0) {
+                cardContent
+                    .frame(width: proxy.size.width)
+                    .background(
+                        GeometryReader { inner in
+                            Color.clear.preference(key: RowHeightKey.self, value: inner.size.height)
+                        }
+                    )
+
+                SwipeActionButton(
+                    isHidden: project.isHidden,
+                    width: Self.actionWidth,
+                    height: rowHeight
+                ) {
+                    withAnimation(.easeOut(duration: 0.18)) { offset = 0 }
+                    onToggleHidden()
+                    onSwipeChanged(false)
+                }
+            }
+            .offset(x: offset + dragOffset)
+        }
+        .frame(height: rowHeight)
+        .clipped()
+        .onPreferenceChange(RowHeightKey.self) { if $0 > 0 { rowHeight = $0 } }
+        .gesture(swipeGesture)
         .onChange(of: isSwiped) { _, swiped in
+            // Only react when the parent disagrees with where we already are —
+            // e.g. another card opened and this one must close. Without this
+            // guard the gesture's own settle animation gets restarted.
+            let target: CGFloat = swiped ? -Self.actionWidth : 0
+            guard offset != target else { return }
             withAnimation(.easeOut(duration: 0.18)) {
-                offset = swiped ? -Self.actionWidth : 0
+                dragOffset = 0
+                offset = target
             }
         }
     }
 
     private var swipeGesture: some Gesture {
         DragGesture(minimumDistance: 12)
-            .updating($dragOffset) { value, state, _ in
+            .onChanged { value in
                 // Let vertical drags through so the popover still scrolls.
                 guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 let proposed = offset + value.translation.width
-                state = max(-Self.actionWidth, min(0, proposed)) - offset
+                dragOffset = max(-Self.actionWidth, min(0, proposed)) - offset
             }
             .onEnded { value in
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                let proposed = offset + value.translation.width
-                onSwipeChanged(proposed < -Self.actionWidth / 2)
+                let proposed = offset + dragOffset
+                // Predicted end position, so a quick flick opens without having
+                // to travel the full distance.
+                let predicted = offset + value.predictedEndTranslation.width
+                let shouldOpen = predicted < -Self.actionWidth / 2
+                    || proposed < -Self.actionWidth / 2
+
+                // Fold the drag into `offset` and settle in one animated step:
+                // zeroing dragOffset separately would flash the rest position.
+                withAnimation(.easeOut(duration: 0.18)) {
+                    dragOffset = 0
+                    offset = shouldOpen ? -Self.actionWidth : 0
+                }
+                // Tell the parent afterwards, purely so it can close any other
+                // open card. `offset` is already correct, so the resulting
+                // isSwiped change is a no-op here.
+                onSwipeChanged(shouldOpen)
             }
     }
 
+    /// Just the collapsed row — this is what slides. The expanded log pane is
+    /// kept out of the clipped, fixed-height swipe area.
     private var cardContent: some View {
-        VStack(spacing: 0) {
-            ProjectRowView(project: project, onBuildNow: onRebuild, onCancel: onCancel)
-                .opacity(project.isHidden ? 0.45 : 1)
+        ProjectRowView(project: project, onBuildNow: onRebuild, onCancel: onCancel)
+            .opacity(project.isHidden ? 0.45 : 1)
+            .background(isHovered ? Color.primary.opacity(0.06) : Color.clear)
+            .contentShape(Rectangle())
+            .onHover { isHovered = $0 }
+            .onTapGesture {
+                // A tap while the action is showing dismisses it rather than
+                // toggling the log — otherwise there's no way to cancel a swipe.
+                if isSwiped || offset != 0 {
+                    withAnimation(.easeOut(duration: 0.18)) { offset = 0 }
+                    onSwipeChanged(false)
+                } else {
+                    onTap()
+                }
+            }
+    }
 
+    @ViewBuilder
+    private var expandedLog: some View {
+        VStack(spacing: 0) {
             if isExpanded {
                 let displayText = expandedLogText
                 if !displayText.isEmpty {
@@ -299,18 +374,6 @@ private struct ProjectCardRow: View {
                 }
             }
         }
-        .background(isHovered ? Color.primary.opacity(0.06) : Color.clear)
-        .contentShape(Rectangle())
-        .onHover { isHovered = $0 }
-        .onTapGesture {
-            // A tap while the action is showing dismisses it rather than
-            // toggling the log — otherwise there's no way to cancel a swipe.
-            if isSwiped {
-                onSwipeChanged(false)
-            } else {
-                onTap()
-            }
-        }
     }
 }
 
@@ -319,6 +382,7 @@ private struct ProjectCardRow: View {
 private struct SwipeActionButton: View {
     let isHidden: Bool
     let width: CGFloat
+    let height: CGFloat
     let action: () -> Void
 
     var body: some View {
@@ -331,8 +395,7 @@ private struct SwipeActionButton: View {
                     .font(.caption2)
             }
             .foregroundStyle(.white)
-            .frame(width: width)
-            .frame(maxHeight: .infinity)
+            .frame(width: width, height: height)
             .background(isHidden ? Color.accentColor : Color.secondary)
             .contentShape(Rectangle())
         }
