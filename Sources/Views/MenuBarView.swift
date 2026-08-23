@@ -8,7 +8,9 @@ struct MenuBarView: View {
 
     @State private var showSettings = false
     @State private var expandedLogID: UUID?
+    @State private var swipedID: UUID?
     @State private var projectListContentHeight: CGFloat = 0
+    @State private var cardHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -85,22 +87,25 @@ struct MenuBarView: View {
             // macOS 26 collapses a ScrollView that has only a maxHeight to zero
             // height inside MenuBarExtra(.window), so we drive the height from
             // the measured content instead of relying on maxHeight alone.
+            let active = store.projects.filter { !$0.isHidden }
+            let hidden = store.projects.filter { $0.isHidden }
             ScrollView {
                 VStack(spacing: 0) {
-                    ForEach(store.projects) { project in
-                        ProjectCardRow(
-                            project: project,
-                            log: allLogs[project.id],
-                            isExpanded: expandedLogID == project.id,
-                            onRebuild: { scheduler.checkNow(for: project.id) },
-                            onCancel: { scheduler.cancelBuild(for: project.id) },
-                            onTap: {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    expandedLogID = expandedLogID == project.id ? nil : project.id
-                                }
-                            }
-                        )
+                    // Headers only appear once there is something to separate;
+                    // a list with nothing hidden reads as a plain list.
+                    if !hidden.isEmpty {
+                        sectionHeader("Active (\(active.count))")
+                    }
+                    ForEach(active) { project in
+                        card(for: project, log: allLogs[project.id])
                         Divider()
+                    }
+                    if !hidden.isEmpty {
+                        sectionHeader("Hidden (\(hidden.count))")
+                        ForEach(hidden) { project in
+                            card(for: project, log: allLogs[project.id])
+                            Divider()
+                        }
                     }
                 }
                 .background(
@@ -110,11 +115,74 @@ struct MenuBarView: View {
                     }
                 )
             }
-            // Clamp into [44, 320]: never collapse to zero before the first
-            // measurement arrives, never grow past the cap (scroll past that).
-            .frame(height: min(max(projectListContentHeight, 44), 320))
+            // Fit the content, capped so about three cards show and the rest
+            // scrolls. Never collapse to zero before the first measurement.
+            .frame(height: min(max(projectListContentHeight, 44), viewportCap))
             .onPreferenceChange(ContentHeightKey.self) { projectListContentHeight = $0 }
+            .onPreferenceChange(CardHeightKey.self) { cardHeight = $0 }
         }
+    }
+
+    /// Height cap for the scroll area: three cards plus their dividers, falling
+    /// back to the old fixed 320 until the first card measurement lands.
+    private var viewportCap: CGFloat {
+        guard cardHeight > 0 else { return 320 }
+        return cardHeight * 3 + 3
+    }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.bold())
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private func card(for project: ManagedProject, log: String?) -> some View {
+        ProjectCardRow(
+            project: project,
+            log: log,
+            isExpanded: expandedLogID == project.id,
+            isSwiped: swipedID == project.id,
+            onRebuild: { scheduler.checkNow(for: project.id) },
+            onCancel: { scheduler.cancelBuild(for: project.id) },
+            onTap: {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    expandedLogID = expandedLogID == project.id ? nil : project.id
+                }
+            },
+            onToggleHidden: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    store.setHidden(id: project.id, !project.isHidden)
+                    // A card that just moved sections shouldn't stay expanded.
+                    if expandedLogID == project.id { expandedLogID = nil }
+                }
+            },
+            // Only one card open at a time.
+            onSwipeChanged: { open in swipedID = open ? project.id : nil }
+        )
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: CardHeightKey.self, value: proxy.size.height)
+            }
+        )
+    }
+}
+
+// Measures a single collapsed card so the viewport can be sized to show three
+// of them — matching the free-provisioning limit of 3 apps per device.
+private struct CardHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        // Smallest non-zero: an expanded card carries its log pane and would
+        // otherwise inflate the estimate.
+        let next = nextValue()
+        guard next > 0 else { return }
+        value = value == 0 ? next : min(value, next)
     }
 }
 
@@ -133,11 +201,19 @@ private struct ProjectCardRow: View {
     let project: ManagedProject
     let log: String?
     let isExpanded: Bool
+    let isSwiped: Bool
     let onRebuild: () -> Void
     let onCancel: () -> Void
     let onTap: () -> Void
+    let onToggleHidden: () -> Void
+    let onSwipeChanged: (Bool) -> Void
 
     @State private var isHovered = false
+    @State private var offset: CGFloat = 0
+    @GestureState private var dragOffset: CGFloat = 0
+
+    /// Width of the revealed action button. Wide enough for icon + label.
+    private static let actionWidth: CGFloat = 76
 
     private var expandedLogText: String {
         var parts: [String] = []
@@ -163,8 +239,45 @@ private struct ProjectCardRow: View {
     }
 
     var body: some View {
+        ZStack(alignment: .trailing) {
+            // Action layer, revealed as the card slides left. Full opacity even
+            // for a hidden project, so "Show" stays legible.
+            SwipeActionButton(isHidden: project.isHidden, width: Self.actionWidth) {
+                onToggleHidden()
+                onSwipeChanged(false)
+            }
+
+            cardContent
+                .background(.background)
+                .offset(x: offset + dragOffset)
+                .gesture(swipeGesture)
+        }
+        .onChange(of: isSwiped) { _, swiped in
+            withAnimation(.easeOut(duration: 0.18)) {
+                offset = swiped ? -Self.actionWidth : 0
+            }
+        }
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 12)
+            .updating($dragOffset) { value, state, _ in
+                // Let vertical drags through so the popover still scrolls.
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                let proposed = offset + value.translation.width
+                state = max(-Self.actionWidth, min(0, proposed)) - offset
+            }
+            .onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                let proposed = offset + value.translation.width
+                onSwipeChanged(proposed < -Self.actionWidth / 2)
+            }
+    }
+
+    private var cardContent: some View {
         VStack(spacing: 0) {
             ProjectRowView(project: project, onBuildNow: onRebuild, onCancel: onCancel)
+                .opacity(project.isHidden ? 0.45 : 1)
 
             if isExpanded {
                 let displayText = expandedLogText
@@ -189,7 +302,41 @@ private struct ProjectCardRow: View {
         .background(isHovered ? Color.primary.opacity(0.06) : Color.clear)
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
-        .onTapGesture { onTap() }
+        .onTapGesture {
+            // A tap while the action is showing dismisses it rather than
+            // toggling the log — otherwise there's no way to cancel a swipe.
+            if isSwiped {
+                onSwipeChanged(false)
+            } else {
+                onTap()
+            }
+        }
+    }
+}
+
+// MARK: - Swipe Action Button
+
+private struct SwipeActionButton: View {
+    let isHidden: Bool
+    let width: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                // Icon and label state the action, not the current state.
+                Image(systemName: isHidden ? "eye" : "eye.slash")
+                    .font(.system(size: 13))
+                Text(isHidden ? "Show" : "Hide")
+                    .font(.caption2)
+            }
+            .foregroundStyle(.white)
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .background(isHidden ? Color.accentColor : Color.secondary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
