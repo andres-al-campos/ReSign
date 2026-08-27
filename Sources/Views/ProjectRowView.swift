@@ -50,8 +50,8 @@ struct ProjectRowView: View {
     }
 
     private var statusColor: Color {
-        // Hidden reads as inactive, but a build in flight still shows its real
-        // state — Rebuild works on a hidden project.
+        // Ignored reads as inactive, but a build in flight still shows its real
+        // state — Rebuild works on an ignored project.
         if project.isHidden && !project.isBuilding { return .secondary.opacity(0.5) }
         if project.isBuilding { return .blue.opacity(0.9) }
         if project.lastError != nil { return .red.opacity(0.9) }
@@ -62,8 +62,8 @@ struct ProjectRowView: View {
     private var statusLabel: String {
         if project.isBuilding { return project.buildPhase ?? "Building..." }
         if let error = project.lastError { return String(error.prefix(80)) }
-        // Keep a past error visible above (hiding shouldn't erase a failure).
-        if project.isHidden { return "Hidden — no automatic rebuilds" }
+        // Keep a past error visible above (ignoring shouldn't erase a failure).
+        if project.isHidden { return "Ignored — no automatic rebuilds" }
         guard let last = project.lastBuiltAt else { return "Never built — will build soon" }
         let lastStr = DateHelpers.relativeLabel(for: last)
         if let expiry = project.expiryLabel {

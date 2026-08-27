@@ -93,16 +93,16 @@ struct MenuBarView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     // Headers only appear once there is something to separate;
-                    // a list with nothing hidden reads as a plain list.
+                    // a list with nothing ignored reads as a plain list.
                     if !hidden.isEmpty {
-                        sectionHeader("Active (\(active.count))")
+                        sectionHeader("Watching (\(active.count))")
                     }
                     ForEach(active) { project in
                         card(for: project, log: allLogs[project.id])
                         Divider()
                     }
                     if !hidden.isEmpty {
-                        sectionHeader("Hidden (\(hidden.count))")
+                        sectionHeader("Ignored (\(hidden.count))")
                         ForEach(hidden) { project in
                             card(for: project, log: allLogs[project.id])
                             Divider()
@@ -126,7 +126,7 @@ struct MenuBarView: View {
     }
 
     /// Height cap for the scroll area: three cards, their dividers, and the
-    /// "Active" header, so three full cards sit below it rather than the header
+    /// "Watching" header, so three full cards sit below it rather than the header
     /// eating into the third. Falls back to a fixed 320 until measured.
     private var viewportCap: CGFloat {
         guard cardHeight > 0 else { return 320 }
@@ -407,7 +407,7 @@ private struct SwipeActionButton: View {
                 // Icon and label state the action, not the current state.
                 Image(systemName: isHidden ? "eye" : "eye.slash")
                     .font(.system(size: 13))
-                Text(isHidden ? "Show" : "Hide")
+                Text(isHidden ? "Watch" : "Ignore")
                     .font(.caption2)
             }
             .foregroundStyle(.white)

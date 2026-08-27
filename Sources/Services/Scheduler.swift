@@ -219,8 +219,8 @@ final class Scheduler {
         notifications?.clearSignedOutNotification()
 
         // Drain the pending-retry set by kicking off builds for each.
-        // Skip anything hidden after it was queued — this is an automatic
-        // trigger, so a parked project shouldn't wake up and build.
+        // Skip anything ignored after it was queued — this is an automatic
+        // trigger, so an ignored project shouldn't wake up and build.
         let toRetry = pendingRetry
         pendingRetry.removeAll()
         for id in toRetry {

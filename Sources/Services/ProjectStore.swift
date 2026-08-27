@@ -89,7 +89,7 @@ final class ProjectStore {
         (try? FileManager.default.contentsOfDirectory(atPath: url.path)) != nil
     }
 
-    /// Parks or unparks a project. Hidden projects are skipped by the
+    /// Ignores or re-watches a project. Ignored projects are skipped by the
     /// scheduler's automatic passes but still build via Rebuild.
     func setHidden(id: UUID, _ hidden: Bool) {
         update(id: id) { $0.isHidden = hidden }
