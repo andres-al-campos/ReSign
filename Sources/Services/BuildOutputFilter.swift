@@ -103,9 +103,38 @@ final class BuildOutputFilter {
         return nil
     }
 
+    /// Whether a line is a genuine compiler/tool diagnostic rather than an
+    /// Objective-C selector that merely contains "error:".
+    ///
+    /// CoreDevice dumps method names like
+    /// `-[MIFreeProfileValidatedAppTracker _onQueue_addReferenceFor...:error:]`,
+    /// and a plain `contains("error:")` promotes those to top-level errors —
+    /// which is how a successful install ended up showing a raw ObjC symbol as
+    /// its status. A real diagnostic has the marker at a word boundary, not
+    /// glued to the previous character by a colon or an identifier.
+    static func isDiagnostic(_ trimmed: String, marker: String) -> Bool {
+        var search = trimmed.startIndex..<trimmed.endIndex
+        while let r = trimmed.range(of: marker, range: search) {
+            let prev = r.lowerBound == trimmed.startIndex
+                ? nil
+                : trimmed[trimmed.index(before: r.lowerBound)]
+            // Preceded by nothing, whitespace, or the `:col:` of a file
+            // location — but not by a letter/underscore/colon, which is what
+            // a selector fragment looks like.
+            if let prev {
+                if prev.isLetter || prev.isNumber || prev == "_" || prev == ":" {
+                    search = r.upperBound..<trimmed.endIndex
+                    continue
+                }
+            }
+            return true
+        }
+        return false
+    }
+
     private func shouldAlwaysKeep(_ trimmed: String) -> Bool {
         // Error / warning lines from the compiler and linker.
-        if trimmed.contains("error:") { return true }
+        if Self.isDiagnostic(trimmed, marker: "error:") { return true }
         if trimmed.contains("warning:") {
             // Drop noisy tool warnings that aren't actionable.
             if trimmed.contains("Metadata extraction skipped") { return false }
@@ -186,6 +215,13 @@ final class BuildOutputFilter {
         if trimmed.hasPrefix("Command line invocation:") { return true }
         if trimmed.hasPrefix("Acquired ") { return true }
         if trimmed.hasPrefix("Enabling developer disk image") { return true }
+        // CoreDevice error dumps are indented `Key = value;` pairs — internal
+        // symbol names and ticket digests that mean nothing to the user. The
+        // classifier reads the raw output, so dropping them here costs no
+        // diagnosis.
+        if trimmed.hasPrefix("FunctionName = ") { return true }
+        if trimmed.hasPrefix("SourceFile = ") { return true }
+        if trimmed.hasPrefix("LineNumber = ") { return true }
         if trimmed.hasPrefix("• ") { return true }
         if trimmed.contains("appintentsmetadataprocessor") { return true }
         if trimmed.contains("appintentsnltrainingprocessor") { return true }
@@ -226,7 +262,7 @@ final class BuildOutputFilter {
         let result = lines.filter { line in
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty { return false }
-            return trimmed.contains("error:") || trimmed.contains("warning:")
+            return isDiagnostic(trimmed, marker: "error:") || trimmed.contains("warning:")
         }
         let extracted = result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
         return extracted.isEmpty ? log : extracted

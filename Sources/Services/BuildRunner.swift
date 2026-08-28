@@ -304,6 +304,16 @@ enum BuildRunner {
         if output.contains("requires Xcode") || output.contains("active developer directory") {
             return ("xcodebuild can't find Xcode. Run: sudo xcode-select -s /Applications/Xcode.app — then ReSign builds resume automatically.", .generic)
         }
+        // A newer iOS than the installed Xcode knows about: devicectl can't
+        // find a matching Developer Disk Image to mount, so the install fails
+        // before it starts. Common right after an iOS update, and no amount of
+        // retrying fixes it — Xcode has to catch up to the phone.
+        if output.contains("Unable to mount developer disk image")
+            || output.contains("DeveloperDiskImage")
+            || output.contains("Failed to mount the developer disk image")
+            || output.contains("could not find a developer disk image") {
+            return ("Your iPhone's iOS is newer than this Xcode supports, so the debug image won't mount. Update Xcode from the App Store (or install the matching iOS support files), then rebuild.", .generic)
+        }
         // MIFreeProfileValidatedAppTracker is the iOS subsystem that tracks apps
         // installed under *free* provisioning profiles, so seeing it in a failed
         // install points at the free-tier cap of 3 apps per device. It's a hint,
