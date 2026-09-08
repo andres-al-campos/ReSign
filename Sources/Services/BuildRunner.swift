@@ -61,6 +61,10 @@ enum BuildRunner {
         append("=== xcodebuild ===\n")
         let buildResult: (output: String, exitCode: Int32)
         do {
+            // Incremental by design: DerivedData is per-project and persistent, so
+            // `build` reuses it. Never add `clean` here — a stale cache is recoverable
+            // via Clean & Retry, but cleaning unconditionally makes every rebuild a
+            // full recompile and SPM re-resolve.
             buildResult = try await run([
                 "xcodebuild",
                 "-project", project.projectPath.path,
@@ -69,7 +73,7 @@ enum BuildRunner {
                 "-destination", "generic/platform=iOS",
                 "-derivedDataPath", derivedDataDir.path,
                 "-allowProvisioningUpdates",
-                "clean", "build"
+                "build"
             ], onOutput: append)
         } catch is CancellationError {
             return (.cancelled, fullLog.value)
