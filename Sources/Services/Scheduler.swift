@@ -179,7 +179,10 @@ final class Scheduler {
                     // Match the notification's action to how the failure is fixed.
                     switch kind {
                     case .signedOut:
-                        // Global fix in Xcode → "Open Xcode".
+                        // Global fix in Xcode → "Open Xcode". Queue it so the
+                        // sign-in poll rebuilds it once the account is back.
+                        self.pendingRetry.insert(projectID)
+                        self.lastKnownSigningState = .signedOut
                         notifications.sendSignedOutNotification()
                     case .projectSigning:
                         // Fixed in this project's signing settings → "Open Project in Xcode".

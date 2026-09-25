@@ -16,6 +16,11 @@ enum SigningStatus {
     /// Runs `security find-identity -v -p codesigning` and parses the count of
     /// "Apple Development" identities. Zero → signed out.
     static func current() -> State {
+        // A valid certificate outlives the Xcode session, so check the account
+        // list first — it empties when Xcode signs out, which is what makes
+        // xcodebuild fail with "No Accounts".
+        if xcodeAccountCount() == 0 { return .signedOut }
+
         let process = Process()
         process.executableURL = URL(filePath: "/usr/bin/security")
         process.arguments = ["find-identity", "-v", "-p", "codesigning"]
@@ -43,6 +48,18 @@ enum SigningStatus {
             .count
 
         return count > 0 ? .signedIn(identityCount: count) : .signedOut
+    }
+
+    /// Apple IDs in Xcode → Settings → Accounts, or nil if Xcode doesn't store the
+    /// list where we expect (older or newer Xcode) — callers must not treat nil as
+    /// signed out, or every build would be blocked.
+    private static func xcodeAccountCount() -> Int? {
+        let domain = "com.apple.dt.Xcode" as CFString
+        // Pick up Xcode's writes made since ReSign launched.
+        CFPreferencesAppSynchronize(domain)
+        guard let lists = CFPreferencesCopyAppValue("DVTDeveloperAccountManagerAppleIDLists" as CFString, domain) as? [String: Any],
+              let accounts = lists["IDE.Identifiers.Prod"] as? [Any] else { return nil }
+        return accounts.count
     }
 }
 
