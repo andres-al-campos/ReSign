@@ -23,12 +23,6 @@ final class Scheduler {
         // Check once at launch
         Task { await checkDueProjects() }
 
-        // Hourly checks
-        timer = Timer.scheduledTimer(withTimeInterval: 7200, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { await self.checkDueProjects() }
-        }
-
         // Check after Mac wakes from sleep
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
@@ -110,6 +104,24 @@ final class Scheduler {
         let due = store.projects.filter { $0.isDue && !$0.isBuilding && !$0.isHidden }
         for project in due {
             await buildProject(id: project.id)
+        }
+        scheduleNextCheck()
+    }
+
+    /// Wake when the next watched project comes due, so none sits due and
+    /// unbuilt. A due project without an error is one Apple handed the old
+    /// profile back to, so retry it every 15 minutes; failed projects keep the
+    /// 2-hour cadence so a missing phone doesn't notify every 15 minutes.
+    private func scheduleNextCheck() {
+        timer?.invalidate()
+        let next = store?.projects
+            .filter { !$0.isHidden && $0.lastError == nil }
+            .compactMap(\.nextDueAt)
+            .min()
+        let delay = min(max(next?.timeIntervalSinceNow ?? .infinity, 15 * 60), 2 * 3600)
+        timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            Task { await self.checkDueProjects() }
         }
     }
 
