@@ -237,6 +237,9 @@ final class Scheduler {
         if line.contains("=== Device Discovery ===") { return "Finding device..." }
         if line.contains("=== xcodebuild ===") { return "Building..." }
         if line.contains("=== Install ===") { return "Installing..." }
+        // A project's build.sh does its own build and install; follow its step headers.
+        if line.contains("=== build.sh ===") { return "Building..." }
+        if line.contains("→ Installing") { return "Installing..." }
         if line.contains("Compiling") { return "Compiling..." }
         if line.contains("Linking") { return "Linking..." }
         if line.contains("Signing") || line.contains("CodeSign") { return "Signing..." }

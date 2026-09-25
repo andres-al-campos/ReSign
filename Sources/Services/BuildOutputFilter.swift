@@ -151,6 +151,7 @@ final class BuildOutputFilter {
         }
 
         // Device / signing / install context.
+        if trimmed.hasPrefix("→ ") { return true } // a project build.sh's step headers
         if trimmed.hasPrefix("Device:") { return true }
         if trimmed.hasPrefix("App installed:") { return true }
 
