@@ -20,7 +20,7 @@ struct StatusIconView: View {
         // icon red or orange forever.
         let active = store.projects.filter { !$0.isHidden }
         if active.contains(where: { $0.lastError != nil }) { return .red.opacity(0.8) }
-        if active.contains(where: { $0.isDue }) { return .orange.opacity(0.8) }
+        if active.contains(where: { $0.isExpired }) { return .orange.opacity(0.8) }
         return .green.opacity(0.8)
     }
 }

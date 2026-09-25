@@ -55,7 +55,7 @@ struct ProjectRowView: View {
         if project.isHidden && !project.isBuilding { return .secondary.opacity(0.5) }
         if project.isBuilding { return .blue.opacity(0.9) }
         if project.lastError != nil { return .red.opacity(0.9) }
-        if project.isDue { return .orange.opacity(0.9) }
+        if project.isExpired { return .orange.opacity(0.9) }
         return .green.opacity(0.9)
     }
 

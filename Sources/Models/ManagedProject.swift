@@ -35,6 +35,14 @@ struct ManagedProject: Identifiable, Codable {
         return next <= .now
     }
 
+    /// The app on the device no longer launches. Without a known expiry, assume
+    /// the free-tier 7 days. Never built means nothing on the device to expire.
+    var isExpired: Bool {
+        if let profileExpiresAt { return profileExpiresAt <= .now }
+        guard let last = lastBuiltAt else { return false }
+        return Calendar.current.date(byAdding: .day, value: 7, to: last).map { $0 <= .now } ?? false
+    }
+
     var daysUntilExpiry: Int {
         guard let profileExpiresAt else {
             guard let last = lastBuiltAt else { return 0 }
