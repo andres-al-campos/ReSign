@@ -51,7 +51,7 @@ final class Scheduler {
         }
 
         notifications.onOpenXcode = {
-            NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Xcode.app"))
+            XcodeAccounts.open()
         }
 
         notifications.onOpenProject = { [weak self] id in
