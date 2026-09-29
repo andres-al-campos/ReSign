@@ -1,11 +1,13 @@
 import Foundation
 import AppKit
+import Network
 
 @MainActor
 final class Scheduler {
     private var timer: Timer?
     private var signInPollTimer: Timer?
     private var phonePollTimer: Timer?
+    private var phoneBrowser: NWBrowser?
     /// Projects whose build failed because the phone wasn't reachable. Rebuilt
     /// as soon as it answers again.
     private var waitingOnPhone: Set<UUID> = []
@@ -77,6 +79,25 @@ final class Scheduler {
             Task { @MainActor in self.reactToSigningStateChange() }
         }
 
+        // A phone joining Wi-Fi announces itself over Bonjour; check it the
+        // moment it does. A phone that walks out of range can't say goodbye,
+        // so it may come back without a fresh announcement — the 2-minute
+        // poll below catches that case.
+        let browser = NWBrowser(for: .bonjour(type: "_remotepairing._tcp", domain: nil), using: .tcp)
+        browser.browseResultsChangedHandler = { [weak self] _, changes in
+            guard changes.contains(where: { if case .added = $0 { return true } else { return false } }) else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                // The announcement can land a few seconds before the phone
+                // accepts connections, so try once more if the first probe misses.
+                if await self.checkPhoneReturned() { return }
+                try? await Task.sleep(for: .seconds(10))
+                await self.checkPhoneReturned()
+            }
+        }
+        browser.start(queue: .main)
+        phoneBrowser = browser
+
         // Poll the phone every 2 minutes while a build waits on it, and rebuild
         // as soon as it answers instead of at the next timed check.
         phonePollTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { [weak self] _ in
@@ -92,6 +113,8 @@ final class Scheduler {
         signInPollTimer = nil
         phonePollTimer?.invalidate()
         phonePollTimer = nil
+        phoneBrowser?.cancel()
+        phoneBrowser = nil
     }
 
     func checkNow(for id: UUID? = nil) {
@@ -230,19 +253,22 @@ final class Scheduler {
         inFlight[id] = task
     }
 
-    /// Called every 2 minutes. Probes only while a build waits on the phone
-    /// and nothing is building (a running build is already using it).
-    private func checkPhoneReturned() async {
-        guard !waitingOnPhone.isEmpty, inFlight.isEmpty else { return }
+    /// Called on a Bonjour announcement and every 2 minutes. Probes only while
+    /// a build waits on the phone and nothing is building (a running build is
+    /// already using it). Returns false only when the probe found no phone.
+    @discardableResult
+    private func checkPhoneReturned() async -> Bool {
+        guard !waitingOnPhone.isEmpty, inFlight.isEmpty else { return true }
         let preferredID = UserDefaults.standard.string(forKey: "selectedDeviceID")
         guard let device = try? await DeviceLocator.findDevice(preferredID: preferredID),
-              await DeviceLocator.isReachable(device.id) else { return }
+              await DeviceLocator.isReachable(device.id) else { return false }
         // Same rule as the sign-in retry: an ignored project doesn't wake up.
         let toRetry = waitingOnPhone
         waitingOnPhone.removeAll()
         for id in toRetry where store?.projects.first(where: { $0.id == id })?.isHidden != true {
             await buildProject(id: id)
         }
+        return true
     }
 
     /// Called every 60s. If the signing state flips from signed-out to signed-in,

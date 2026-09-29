@@ -24,6 +24,12 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024 Alejandro. All rights reserved.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>ReSign watches for your iPhone on Wi-Fi so it can rebuild as soon as the phone is back.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_remotepairing._tcp</string>
+	</array>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSUserNotificationAlertStyle</key>
