@@ -11,6 +11,7 @@ final class Scheduler {
     /// Projects whose build failed because the phone wasn't reachable. Rebuilt
     /// as soon as it answers again.
     private var waitingOnPhone: Set<UUID> = []
+    private var closeWatch: Task<Void, Never>?
     private var inFlight: [UUID: Task<Void, Never>] = [:]
     private weak var store: ProjectStore?
     private weak var notifications: NotificationManager?
@@ -81,8 +82,8 @@ final class Scheduler {
 
         // A phone joining Wi-Fi announces itself over Bonjour; check it the
         // moment it does. A phone that walks out of range can't say goodbye,
-        // so it may come back without a fresh announcement — the 2-minute
-        // poll below catches that case.
+        // so it may come back without a fresh announcement — the polls below
+        // catch that case.
         let browser = NWBrowser(for: .bonjour(type: "_remotepairing._tcp", domain: nil), using: .tcp)
         browser.browseResultsChangedHandler = { [weak self] _, changes in
             guard changes.contains(where: { if case .added = $0 { return true } else { return false } }) else { return }
@@ -98,9 +99,9 @@ final class Scheduler {
         browser.start(queue: .main)
         phoneBrowser = browser
 
-        // Poll the phone every 2 minutes while a build waits on it, and rebuild
-        // as soon as it answers instead of at the next timed check.
-        phonePollTimer = Timer.scheduledTimer(withTimeInterval: 120, repeats: true) { [weak self] _ in
+        // Slow fallback for a phone that came back without announcing itself:
+        // after the first 5 minutes of close watching, look every 2 hours.
+        phonePollTimer = Timer.scheduledTimer(withTimeInterval: 7200, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { await self.checkPhoneReturned() }
         }
@@ -137,7 +138,11 @@ final class Scheduler {
 
     private func checkDueProjects() async {
         guard let store else { return }
-        let due = store.projects.filter { $0.isDue && !$0.isBuilding && !$0.isHidden }
+        // Projects waiting on the phone are rebuilt when it answers; retrying
+        // them here would only repeat the "not reachable" notification.
+        let due = store.projects.filter {
+            $0.isDue && !$0.isBuilding && !$0.isHidden && !waitingOnPhone.contains($0.id)
+        }
         for project in due {
             await buildProject(id: project.id)
         }
@@ -241,6 +246,7 @@ final class Scheduler {
                         notifications.sendStaleCacheNotification(project: project, message: message)
                     case .deviceUnreachable:
                         self.waitingOnPhone.insert(projectID)
+                        self.watchPhoneClosely()
                         notifications.sendFailureNotification(project: project, message: message)
                     case .generic:
                         notifications.sendFailureNotification(project: project, message: message)
@@ -255,7 +261,22 @@ final class Scheduler {
         inFlight[id] = task
     }
 
-    /// Called on a Bonjour announcement and every 2 minutes. Probes only while
+    /// Right after the phone drops, probe back to back for 5 minutes: most
+    /// drops are a Wi-Fi blip or a locked phone and resolve in that window.
+    /// A probe takes ~12s when the phone is away, so this checks about every 14s.
+    private func watchPhoneClosely() {
+        guard closeWatch == nil else { return }
+        closeWatch = Task { [weak self] in
+            let deadline = Date.now.addingTimeInterval(5 * 60)
+            while let self, !self.waitingOnPhone.isEmpty, Date.now < deadline {
+                await self.checkPhoneReturned()
+                try? await Task.sleep(for: .seconds(2))
+            }
+            self?.closeWatch = nil
+        }
+    }
+
+    /// Called on a Bonjour announcement, during the close watch, and every 2 hours. Probes only while
     /// a build waits on the phone and nothing is building (a running build is
     /// already using it). Returns false only when the probe found no phone.
     @discardableResult
