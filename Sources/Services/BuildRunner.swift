@@ -415,7 +415,7 @@ enum BuildRunner {
             emit(text)
         }
 
-        return try await withTaskCancellationHandler {
+        let result = try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 process.terminationHandler = { p in
                     // Clean up handlers
@@ -436,12 +436,7 @@ enum BuildRunner {
                         onOutput(tail)
                     }
 
-                    let output = outputAccumulator.value
-                    if Task.isCancelled {
-                        continuation.resume(throwing: CancellationError())
-                    } else {
-                        continuation.resume(returning: (output: output, exitCode: p.terminationStatus))
-                    }
+                    continuation.resume(returning: (output: outputAccumulator.value, exitCode: p.terminationStatus))
                 }
 
                 do {
@@ -453,6 +448,11 @@ enum BuildRunner {
         } onCancel: {
             process.terminate()
         }
+        // Checked here, back in the task: the termination handler runs outside
+        // it, where Task.isCancelled is always false, so a killed process
+        // would otherwise come back as an ordinary failure.
+        try Task.checkCancellation()
+        return result
     }
 }
 

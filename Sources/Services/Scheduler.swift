@@ -218,6 +218,13 @@ final class Scheduler {
 
             await MainActor.run { [weak self] in
                 guard let self else { return }
+                // cancelBuild already marked it cancelled and cleared inFlight,
+                // which may now hold a newer build of the same project. Keep the
+                // log, touch nothing else.
+                if Task.isCancelled {
+                    self.logStore?.save(log: log, for: projectID, name: projectName)
+                    return
+                }
                 self.inFlight.removeValue(forKey: projectID)
                 self.pendingRetry.remove(projectID)
                 self.waitingOnPhone.remove(projectID)
