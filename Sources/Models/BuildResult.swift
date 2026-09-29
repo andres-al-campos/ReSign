@@ -24,6 +24,9 @@ enum BuildErrorKind {
     /// Stale build cache — deleting ReSign's DerivedData for the project and
     /// rebuilding is likely to fix it.
     case staleCache
+    /// The phone dropped off the network, before or during install. Nothing to
+    /// fix in the project → queued and rebuilt when the phone is back.
+    case deviceUnreachable
     /// Anything else; the user should read the log.
     case generic
 }

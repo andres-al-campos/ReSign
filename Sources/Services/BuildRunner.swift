@@ -23,7 +23,7 @@ enum BuildRunner {
             // Fail here rather than after a full compile dies at install.
             guard await DeviceLocator.isReachable(device.id) else {
                 try Task.checkCancellation()
-                return (.failure(phase: .deviceNotFound, message: "\(device.name) isn't reachable. Unlock it and make sure it's on the same Wi-Fi as this Mac. ReSign rebuilds when it's back."), fullLog.value)
+                return (.failure(phase: .deviceNotFound, message: "\(device.name) isn't reachable. Unlock it and make sure it's on the same Wi-Fi as this Mac. ReSign rebuilds when it's back.", kind: .deviceUnreachable), fullLog.value)
             }
         } catch is CancellationError {
             return (.cancelled, fullLog.value)
@@ -209,7 +209,8 @@ enum BuildRunner {
                 )
             }
             let classified = classifyBuildError(result.output)
-            return .failure(phase: .xcodebuild, message: classified.message, kind: classified.kind)
+            let phase: BuildPhase = result.output.contains("→ Installing") ? .deviceInstall : .xcodebuild
+            return .failure(phase: phase, message: classified.message, kind: classified.kind)
         }
 
         let expiry = readProfileExpiry(appPath: stagedApp)
@@ -287,6 +288,13 @@ enum BuildRunner {
     private static func classifyBuildError(_ output: String) -> (message: String, kind: BuildErrorKind) {
         if output.contains("No Accounts") {
             return ("Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in with your Apple ID, then try again.", .signedOut)
+        }
+        // The phone left Wi-Fi (or locked hard) partway through. The build
+        // itself is fine; it only needs the phone back.
+        if output.contains("unable to locate a device")
+            || output.contains("connection to this device could not be established")
+            || output.contains("NWError") {
+            return ("Lost the connection to your iPhone during install. Unlock it and make sure it's on the same Wi-Fi as this Mac. ReSign rebuilds when it's back.", .deviceUnreachable)
         }
         if output.contains("No profiles for") || output.contains("no provisioning profiles") {
             return ("No provisioning profile found. Open the project in Xcode and build it once manually to create a profile.", .projectSigning)

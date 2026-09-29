@@ -222,7 +222,6 @@ final class Scheduler {
                     store.markBuildSucceeded(id: projectID, profileExpiresAt: profileExpiresAt)
                     notifications.sendSuccessNotification(project: project)
                 case .failure(let phase, let message, let kind):
-                    if phase == .deviceNotFound { self.waitingOnPhone.insert(projectID) }
                     let displayLog = BuildOutputFilter.extractErrors(from: log)
                     self.logStore?.save(log: displayLog, for: projectID, name: projectName)
                     store.markBuildFailed(id: projectID, error: "\(phase.rawValue): \(message)")
@@ -240,6 +239,9 @@ final class Scheduler {
                     case .staleCache:
                         // Fixable automatically → "Clean & Retry".
                         notifications.sendStaleCacheNotification(project: project, message: message)
+                    case .deviceUnreachable:
+                        self.waitingOnPhone.insert(projectID)
+                        notifications.sendFailureNotification(project: project, message: message)
                     case .generic:
                         notifications.sendFailureNotification(project: project, message: message)
                     }
