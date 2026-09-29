@@ -43,12 +43,12 @@ final class Scheduler {
         // Wire up notification retry
         notifications.onRetry = { [weak self] id in
             guard let self else { return }
-            Task { await self.buildProject(id: id) }
+            Task { await self.buildProject(id: id, manual: true) }
         }
 
         notifications.onCleanRetry = { [weak self] id in
             guard let self else { return }
-            Task { await self.buildProject(id: id, clean: true) }
+            Task { await self.buildProject(id: id, clean: true, manual: true) }
         }
 
         notifications.onOpenXcode = {
@@ -99,8 +99,7 @@ final class Scheduler {
         browser.start(queue: .main)
         phoneBrowser = browser
 
-        // Slow fallback for a phone that came back without announcing itself:
-        // after the first 5 minutes of close watching, look every 2 hours.
+        // Fallback for a phone that came back without announcing itself.
         phonePollTimer = Timer.scheduledTimer(withTimeInterval: 7200, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { await self.checkPhoneReturned() }
@@ -121,7 +120,7 @@ final class Scheduler {
     func checkNow(for id: UUID? = nil) {
         Task {
             if let id {
-                await buildProject(id: id)
+                await buildProject(id: id, manual: true)
             } else {
                 await checkDueProjects()
             }
@@ -166,7 +165,10 @@ final class Scheduler {
         }
     }
 
-    private func buildProject(id: UUID, clean: Bool = false) async {
+    /// `manual` is a build the user asked for (Rebuild, or a notification's
+    /// Retry). Only those get the close phone watch if the phone is away; the
+    /// user is likely waiting on it. Automatic builds wait for the 2-hour check.
+    private func buildProject(id: UUID, clean: Bool = false, manual: Bool = false) async {
         guard let store, let notifications else { return }
         guard inFlight[id] == nil else { return }
         guard let project = store.projects.first(where: { $0.id == id }) else { return }
@@ -246,7 +248,7 @@ final class Scheduler {
                         notifications.sendStaleCacheNotification(project: project, message: message)
                     case .deviceUnreachable:
                         self.waitingOnPhone.insert(projectID)
-                        self.watchPhoneClosely()
+                        if manual { self.watchPhoneClosely() }
                         notifications.sendFailureNotification(project: project, message: message)
                     case .generic:
                         notifications.sendFailureNotification(project: project, message: message)
@@ -261,8 +263,8 @@ final class Scheduler {
         inFlight[id] = task
     }
 
-    /// Right after the phone drops, probe back to back for 5 minutes: most
-    /// drops are a Wi-Fi blip or a locked phone and resolve in that window.
+    /// After a manual build loses the phone, probe back to back for 5 minutes:
+    /// most drops are a Wi-Fi blip or a locked phone and resolve in that window.
     /// A probe takes ~12s when the phone is away, so this checks about every 14s.
     private func watchPhoneClosely() {
         guard closeWatch == nil else { return }
