@@ -20,6 +20,11 @@ enum BuildRunner {
             try Task.checkCancellation()
             device = try await DeviceLocator.findDevice(preferredID: preferredDeviceID)
             append("Device: \(device.name) (\(device.id))\n\n")
+            // Fail here rather than after a full compile dies at install.
+            guard await DeviceLocator.isReachable(device.id) else {
+                try Task.checkCancellation()
+                return (.failure(phase: .deviceNotFound, message: "\(device.name) isn't reachable. Unlock it and make sure it's on the same Wi-Fi as this Mac. ReSign rebuilds when it's back."), fullLog.value)
+            }
         } catch is CancellationError {
             return (.cancelled, fullLog.value)
         } catch {

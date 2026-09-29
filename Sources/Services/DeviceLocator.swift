@@ -40,6 +40,13 @@ enum DeviceLocator {
         return devices[0]
     }
 
+    /// Whether the phone answers right now. `list devices` can't tell: it keeps
+    /// reporting a paired Wi-Fi phone as present after it leaves. Connecting
+    /// takes ~0.3s warm, ~3s cold, and fails after ~12s when the phone is away.
+    static func isReachable(_ id: String) async -> Bool {
+        await run(["xcrun", "devicectl", "device", "info", "details", "--device", id, "--timeout", "10"]).exitCode == 0
+    }
+
     private static func run(_ arguments: [String]) async -> (output: String, exitCode: Int32) {
         await withCheckedContinuation { continuation in
             let process = Process()
