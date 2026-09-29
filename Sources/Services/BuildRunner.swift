@@ -42,7 +42,7 @@ enum BuildRunner {
             if let delegated = await runProjectBuildScript(
                 buildScript, project: project, deviceID: device.id, append: append
             ) {
-                return (delegated, fullLog.value)
+                return (await blamingLostPhone(delegated, deviceID: device.id), fullLog.value)
             }
             append("\n(build.sh did not produce a signed .app — falling back to xcodebuild)\n\n")
         }
@@ -130,7 +130,7 @@ enum BuildRunner {
             } else {
                 msg = String(installResult.output.suffix(300))
             }
-            return (.failure(phase: .deviceInstall, message: msg), fullLog.value)
+            return (await blamingLostPhone(.failure(phase: .deviceInstall, message: msg), deviceID: device.id), fullLog.value)
         }
 
         // Read actual profile expiration date
@@ -285,6 +285,18 @@ enum BuildRunner {
         }
     }
 
+    private static let lostPhoneMessage = "Lost the connection to your iPhone during install. Unlock it and make sure it's on the same Wi-Fi as this Mac. ReSign rebuilds when it's back."
+
+    /// devicectl reports a phone that vanished mid-install under several
+    /// errors, some as generic as "Failed to install the app" (3002). Rather
+    /// than chase the wording, ask the phone: if it no longer answers, the
+    /// install failed because it left.
+    private static func blamingLostPhone(_ result: BuildResult, deviceID: String) async -> BuildResult {
+        guard case .failure(.deviceInstall, _, let kind) = result, kind != .deviceUnreachable,
+              await !DeviceLocator.isReachable(deviceID) else { return result }
+        return .failure(phase: .deviceInstall, message: lostPhoneMessage, kind: .deviceUnreachable)
+    }
+
     private static func classifyBuildError(_ output: String) -> (message: String, kind: BuildErrorKind) {
         if output.contains("No Accounts") {
             return ("Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in with your Apple ID, then try again.", .signedOut)
@@ -294,7 +306,7 @@ enum BuildRunner {
         if output.contains("unable to locate a device")
             || output.contains("connection to this device could not be established")
             || output.contains("NWError") {
-            return ("Lost the connection to your iPhone during install. Unlock it and make sure it's on the same Wi-Fi as this Mac. ReSign rebuilds when it's back.", .deviceUnreachable)
+            return (lostPhoneMessage, .deviceUnreachable)
         }
         if output.contains("No profiles for") || output.contains("no provisioning profiles") {
             return ("No provisioning profile found. Open the project in Xcode and build it once manually to create a profile.", .projectSigning)
