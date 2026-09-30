@@ -148,17 +148,19 @@ final class Scheduler {
         scheduleNextCheck()
     }
 
-    /// Wake when the next watched project comes due, so none sits due and
-    /// unbuilt. A due project without an error is one Apple handed the old
-    /// profile back to, so retry it every 15 minutes; failed projects keep the
-    /// 2-hour cadence so a missing phone doesn't notify every 15 minutes.
+    /// Wake when the next watched project comes due, so none sits expired and
+    /// unbuilt. Failed projects are left out: they retry on the 2-hour cap so
+    /// a lasting failure doesn't notify more often. A due time already past
+    /// means the last build right after expiry still got the old profile, so
+    /// wait 15 minutes rather than rebuilding in a loop.
     private func scheduleNextCheck() {
         timer?.invalidate()
         let next = store?.projects
             .filter { !$0.isHidden && $0.lastError == nil }
             .compactMap(\.nextDueAt)
             .min()
-        let delay = min(max(next?.timeIntervalSinceNow ?? .infinity, 15 * 60), 2 * 3600)
+        let untilNext = next?.timeIntervalSinceNow ?? .infinity
+        let delay = min(untilNext > 0 ? untilNext : 15 * 60, 2 * 3600)
         timer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
             guard let self else { return }
             Task { await self.checkDueProjects() }
