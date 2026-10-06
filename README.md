@@ -44,4 +44,4 @@ For development iteration, `./build.sh --fast` does a Debug build and runs from 
 
 ## License
 
-MIT
+AGPL-3.0. See [LICENSE](LICENSE).
