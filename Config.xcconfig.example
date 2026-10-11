@@ -1,0 +1,11 @@
+// Template for local signing config.
+//
+//   cp Config.xcconfig.example Config.xcconfig
+//
+// DEVELOPMENT_TEAM is the 10-character Team ID from Xcode → Settings → Accounts
+// → your Apple ID → Manage Certificates, or from developer.apple.com →
+// Membership. It is machine-specific, which is why it lives here rather than in
+// the Xcode project, and why Config.xcconfig is gitignored.
+//
+// A personal (free) Apple ID works.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID

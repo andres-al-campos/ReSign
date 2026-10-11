@@ -36,6 +36,12 @@ ReSign scans one level deep inside the projects folder, looking for `ProjectName
 
 ## Build from source
 
+Set your Apple Team ID once (Xcode → Settings → Accounts → your team; a free Apple ID works):
+
+```bash
+cp Config.xcconfig.example Config.xcconfig   # then set DEVELOPMENT_TEAM
+```
+
 ```bash
 ./build.sh   # Release build, installs to /Applications/_vibe_coded and launches
 ```

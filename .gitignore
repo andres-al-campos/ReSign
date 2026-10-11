@@ -12,3 +12,6 @@ DerivedData/
 
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
+
+# Local signing config (your Apple Team ID) — copy from Config.xcconfig.example
+Config.xcconfig

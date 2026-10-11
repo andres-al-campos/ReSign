@@ -50,6 +50,7 @@
 		RS0036 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
 		RS0060 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		RS0061 /* ReSign.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ReSign.entitlements; sourceTree = "<group>"; };
+		RS0062 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		RS0070 /* ReSign.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReSign.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -144,6 +145,7 @@
 			children = (
 				RS0060 /* Info.plist */,
 				RS0061 /* ReSign.entitlements */,
+				RS0062 /* Config.xcconfig */,
 			);
 			name = Root;
 			sourceTree = "<group>";
@@ -243,6 +245,7 @@
 /* Begin XCBuildConfiguration section */
 		RS0301 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = RS0062 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_ENTITLEMENTS = ReSign.entitlements;
@@ -250,7 +253,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 35DGVFM7WB;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = YES;
@@ -272,6 +274,7 @@
 		};
 		RS0302 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = RS0062 /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGN_ENTITLEMENTS = ReSign.entitlements;
@@ -279,7 +282,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 35DGVFM7WB;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Info.plist;
