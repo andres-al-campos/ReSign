@@ -4,24 +4,32 @@
 # Usage:
 #   ./build.sh                 # Release build, install to /Applications, relaunch (default)
 #   ./build.sh --fast          # fast: Debug build, run from ./build (quick iteration)
-#   ./build.sh check           # run the laws in laws/ (no build)
+#   ./build.sh check           # run the laws in laws/ and every drive (no build)
+#   ./build.sh drive [name]    # run every feature check in drive/, or one
 #   ./build.sh -v              # verbose xcodebuild output
 #   ./build.sh -h              # show this help
 
 set -euo pipefail
 
 APP_NAME=ReSign
-MODE=install   # install | fast | noinstall | check
+MODE=install   # install | fast | noinstall | check | drive
+DRIVE_NAME=""
 VERBOSE=0
 # Self-built apps live separately from App Store / internet downloads.
 INSTALL_DIR="/Applications/_vibe_coded"
 
 for arg in "$@"; do
+    # The word after `drive` is the feature to drive, not a flag.
+    if [ "$MODE" = "drive" ] && [ -z "$DRIVE_NAME" ] && [ "${arg#-}" = "$arg" ]; then
+        DRIVE_NAME="$arg"
+        continue
+    fi
     case "$arg" in
         --fast|--dev)        MODE=fast ;;
         --install)           MODE=install ;;  # kept for back-compat; now the default
         -n|--no-install)     MODE=noinstall ;;
         check)               MODE=check ;;
+        drive)               MODE=drive ;;
         -v|--verbose)        VERBOSE=1 ;;
         -h|--help)
             cat <<'EOF'
@@ -31,7 +39,8 @@ Usage:
   ./build.sh                 Release build, install to /Applications, relaunch (default)
   ./build.sh --fast          fast: Debug build, run from ./build (quick iteration)
   ./build.sh --no-install    Release build, stage into ./build, no install/launch (for release.sh)
-  ./build.sh check           run the laws in laws/ (no build)
+  ./build.sh check           run the laws in laws/ and every drive (no build)
+  ./build.sh drive [name]    run every feature check in drive/, or one
   ./build.sh -v              verbose xcodebuild output
   ./build.sh -h              show this help
 EOF
@@ -46,11 +55,41 @@ done
 
 cd "$(dirname "$0")"
 
+# Every feature check in drive/, or the one named. A name with no script is an
+# error, so a typo can't pass by running nothing.
+drive() {
+    local name="$1" failed=0 ran=0
+    if [ -n "$name" ]; then
+        if [ ! -f "drive/$name.sh" ]; then
+            echo "error: no drive named \"$name\": there's no drive/$name.sh. Fix the name, or write that check."
+            local there
+            there=$(ls drive 2>/dev/null | sed -n 's/\.sh$//p' | tr '\n' ' ')
+            echo "       The ones there: ${there:-none yet}"
+            return 1
+        fi
+        "drive/$name.sh"
+        return $?
+    fi
+    for d in drive/*.sh; do
+        [ -f "$d" ] || continue
+        ran=1
+        "$d" || failed=1
+    done
+    [ "$ran" = 1 ] || echo "No drives yet: drive/ has no checks. features/README.md lists what isn't covered."
+    return $failed
+}
+
+if [ "$MODE" = "drive" ]; then
+    drive "$DRIVE_NAME"
+    exit $?
+fi
+
 if [ "$MODE" = "check" ]; then
     failed=0
     for law in laws/*.sh; do
         "$law" || failed=1
     done
+    drive "" || failed=1
     exit $failed
 fi
 

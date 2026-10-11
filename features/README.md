@@ -33,9 +33,11 @@ feature touched for the first time gets a file and a row here.
 ## Driving conventions
 
 `./build.sh check` runs every law in `laws/`, including the one that keeps
-this map and its files in step. There is no test target and no drive harness
-yet. A feature's check, once it has one, is `./build.sh drive <name>` backed
-by `drive/<name>.sh`.
+this map and its files in step, then every drive.
+
+A feature's check is `drive/<name>.sh`. `./build.sh drive` runs them all and
+`./build.sh drive <name>` runs one; a name with no script is an error. There
+are none yet, and no test target.
 
 ReSign's features depend on Xcode's sign-in state, a paired iPhone and real
 `xcodebuild` runs, so most of them can't be driven headless as they stand.
