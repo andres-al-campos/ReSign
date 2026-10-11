@@ -21,6 +21,9 @@ final class Scheduler {
     /// as signing recovers.
     private var pendingRetry: Set<UUID> = []
     private var lastKnownSigningState: SigningStatus.State = .unknown(reason: "Not yet checked")
+    /// While a build waits on a sign-in, the poll runs every 2s until this
+    /// time. Bounded so a Mac left signed out for days isn't polled like that.
+    private var signInWatchUntil: Date = .distantPast
 
     func start(store: ProjectStore, notifications: NotificationManager, logStore: BuildLogStore) {
         self.store = store
@@ -51,8 +54,10 @@ final class Scheduler {
             Task { await self.buildProject(id: id, clean: true, manual: true) }
         }
 
-        notifications.onOpenXcode = {
+        notifications.onOpenXcode = { [weak self] in
             XcodeAccounts.open()
+            // The user is about to sign in; restart the close watch.
+            self?.watchSignInClosely()
         }
 
         notifications.onOpenProject = { [weak self] id in
@@ -73,12 +78,9 @@ final class Scheduler {
             }
         }
 
-        // Poll signing state every 60s. When the user signs back in, we
-        // automatically rebuild anything that was skipped.
-        signInPollTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in self.reactToSigningStateChange() }
-        }
+        // Poll signing state. When the user signs back in, we automatically
+        // rebuild anything that was skipped.
+        scheduleSignInPoll()
 
         // A phone joining Wi-Fi announces itself over Bonjour; check it the
         // moment it does. A phone that walks out of range can't say goodbye,
@@ -186,6 +188,7 @@ final class Scheduler {
         lastKnownSigningState = signingState
         if case .signedOut = signingState {
             pendingRetry.insert(id)
+            watchSignInClosely()
             store.markBuildFailed(
                 id: id,
                 error: "Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in — I'll retry automatically."
@@ -248,6 +251,7 @@ final class Scheduler {
                         // sign-in poll rebuilds it once the account is back.
                         self.pendingRetry.insert(projectID)
                         self.lastKnownSigningState = .signedOut
+                        self.watchSignInClosely()
                         notifications.sendSignedOutNotification()
                     case .projectSigning:
                         // Fixed in this project's signing settings → "Open Project in Xcode".
@@ -305,7 +309,34 @@ final class Scheduler {
         return true
     }
 
-    /// Called every 60s. If the signing state flips from signed-out to signed-in,
+    /// Xcode doesn't announce a sign-in, so it has to be polled for: every 2s
+    /// while a build waits on one and the close watch is open, every 60s
+    /// otherwise. Once the account is back the queued builds start and the poll
+    /// drops to 60s; a build that fails signed-out again reopens the watch.
+    private func scheduleSignInPoll() {
+        signInPollTimer?.invalidate()
+        var waitingOnSignIn = false
+        if case .signedOut = lastKnownSigningState { waitingOnSignIn = !pendingRetry.isEmpty }
+        let interval: TimeInterval = waitingOnSignIn && Date.now < signInWatchUntil ? 2 : 60
+        signInPollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                // stop() clears the timer; don't revive the poll after it.
+                guard let self, self.signInPollTimer != nil else { return }
+                self.reactToSigningStateChange()
+                self.scheduleSignInPoll()
+            }
+        }
+    }
+
+    /// Poll for the sign-in every 2s for the next 10 minutes: long enough to
+    /// type an Apple ID and get through two-factor. Opened when a build is
+    /// queued for a sign-in and again when the user clicks the notification.
+    private func watchSignInClosely() {
+        signInWatchUntil = Date.now.addingTimeInterval(10 * 60)
+        scheduleSignInPoll()
+    }
+
+    /// Called on each sign-in poll. If the signing state flips from signed-out to signed-in,
     /// clear the notification and rebuild anything we had queued.
     private func reactToSigningStateChange() {
         let current = SigningStatus.current()
