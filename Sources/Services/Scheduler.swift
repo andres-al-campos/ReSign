@@ -21,8 +21,8 @@ final class Scheduler {
     /// as signing recovers.
     private var pendingRetry: Set<UUID> = []
     private var lastKnownSigningState: SigningStatus.State = .unknown(reason: "Not yet checked")
-    /// While a build waits on a sign-in, the poll runs every 2s until this
-    /// time. Bounded so a Mac left signed out for days isn't polled like that.
+    /// After the user clicks the signed-out notification, the poll runs every
+    /// 2s until this time. Being signed out doesn't open it: that can last days.
     private var signInWatchUntil: Date = .distantPast
 
     func start(store: ProjectStore, notifications: NotificationManager, logStore: BuildLogStore) {
@@ -56,7 +56,7 @@ final class Scheduler {
 
         notifications.onOpenXcode = { [weak self] in
             XcodeAccounts.open()
-            // The user is about to sign in; restart the close watch.
+            // The user is about to sign in; watch for it closely.
             self?.watchSignInClosely()
         }
 
@@ -188,7 +188,6 @@ final class Scheduler {
         lastKnownSigningState = signingState
         if case .signedOut = signingState {
             pendingRetry.insert(id)
-            watchSignInClosely()
             store.markBuildFailed(
                 id: id,
                 error: "Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in — I'll retry automatically."
@@ -239,6 +238,8 @@ final class Scheduler {
                     let displayLog = BuildOutputFilter.extractSuccess(from: log)
                     self.logStore?.save(log: displayLog, for: projectID, name: projectName)
                     store.markBuildSucceeded(id: projectID, profileExpiresAt: profileExpiresAt)
+                    // The sign-in took; close the watch.
+                    if self.pendingRetry.isEmpty { self.signInWatchUntil = .distantPast }
                     notifications.sendSuccessNotification(project: project)
                 case .failure(let phase, let message, let kind):
                     let displayLog = BuildOutputFilter.extractErrors(from: log)
@@ -251,7 +252,8 @@ final class Scheduler {
                         // sign-in poll rebuilds it once the account is back.
                         self.pendingRetry.insert(projectID)
                         self.lastKnownSigningState = .signedOut
-                        self.watchSignInClosely()
+                        // Back to 2s if the close watch is still open.
+                        self.scheduleSignInPoll()
                         notifications.sendSignedOutNotification()
                     case .projectSigning:
                         // Fixed in this project's signing settings → "Open Project in Xcode".
@@ -311,8 +313,8 @@ final class Scheduler {
 
     /// Xcode doesn't announce a sign-in, so it has to be polled for: every 2s
     /// while a build waits on one and the close watch is open, every 60s
-    /// otherwise. Once the account is back the queued builds start and the poll
-    /// drops to 60s; a build that fails signed-out again reopens the watch.
+    /// otherwise. The watch stays open until a queued build succeeds, so one
+    /// that fails signed-out again goes back to the 2s poll.
     private func scheduleSignInPoll() {
         signInPollTimer?.invalidate()
         var waitingOnSignIn = false
@@ -329,8 +331,8 @@ final class Scheduler {
     }
 
     /// Poll for the sign-in every 2s for the next 10 minutes: long enough to
-    /// type an Apple ID and get through two-factor. Opened when a build is
-    /// queued for a sign-in and again when the user clicks the notification.
+    /// type an Apple ID and get through two-factor. Opened only when the user
+    /// clicks the signed-out notification.
     private func watchSignInClosely() {
         signInWatchUntil = Date.now.addingTimeInterval(10 * 60)
         scheduleSignInPoll()
