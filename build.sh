@@ -63,7 +63,7 @@ drive() {
         if [ ! -f "drive/$name.sh" ]; then
             echo "error: no drive named \"$name\": there's no drive/$name.sh. Fix the name, or write that check."
             local there
-            there=$(ls drive 2>/dev/null | sed -n 's/\.sh$//p' | tr '\n' ' ')
+            there=$(ls drive 2>/dev/null | sed -n 's/\.sh$//p' | tr '\n' ' ' || true)
             echo "       The ones there: ${there:-none yet}"
             return 1
         fi
