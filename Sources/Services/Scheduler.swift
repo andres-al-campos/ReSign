@@ -330,11 +330,11 @@ final class Scheduler {
         }
     }
 
-    /// Poll for the sign-in every 2s for the next 10 minutes: long enough to
+    /// Poll for the sign-in every 2s for the next 5 minutes: long enough to
     /// type an Apple ID and get through two-factor. Opened only when the user
     /// clicks the signed-out notification.
     private func watchSignInClosely() {
-        signInWatchUntil = Date.now.addingTimeInterval(10 * 60)
+        signInWatchUntil = Date.now.addingTimeInterval(5 * 60)
         scheduleSignInPoll()
     }
 
