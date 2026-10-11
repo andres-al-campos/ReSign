@@ -4,13 +4,14 @@
 # Usage:
 #   ./build.sh                 # Release build, install to /Applications, relaunch (default)
 #   ./build.sh --fast          # fast: Debug build, run from ./build (quick iteration)
+#   ./build.sh check           # run the laws in laws/ (no build)
 #   ./build.sh -v              # verbose xcodebuild output
 #   ./build.sh -h              # show this help
 
 set -euo pipefail
 
 APP_NAME=ReSign
-MODE=install   # install | fast | noinstall
+MODE=install   # install | fast | noinstall | check
 VERBOSE=0
 # Self-built apps live separately from App Store / internet downloads.
 INSTALL_DIR="/Applications/_vibe_coded"
@@ -20,6 +21,7 @@ for arg in "$@"; do
         --fast|--dev)        MODE=fast ;;
         --install)           MODE=install ;;  # kept for back-compat; now the default
         -n|--no-install)     MODE=noinstall ;;
+        check)               MODE=check ;;
         -v|--verbose)        VERBOSE=1 ;;
         -h|--help)
             cat <<'EOF'
@@ -29,6 +31,7 @@ Usage:
   ./build.sh                 Release build, install to /Applications, relaunch (default)
   ./build.sh --fast          fast: Debug build, run from ./build (quick iteration)
   ./build.sh --no-install    Release build, stage into ./build, no install/launch (for release.sh)
+  ./build.sh check           run the laws in laws/ (no build)
   ./build.sh -v              verbose xcodebuild output
   ./build.sh -h              show this help
 EOF
@@ -42,6 +45,24 @@ EOF
 done
 
 cd "$(dirname "$0")"
+
+if [ "$MODE" = "check" ]; then
+    failed=0
+    for law in laws/*.sh; do
+        "$law" || failed=1
+    done
+    exit $failed
+fi
+
+# 0. Signing config. The .xcodeproj reads DEVELOPMENT_TEAM from Config.xcconfig,
+#    which is gitignored (per-machine). On a fresh clone it won't exist yet.
+if [ ! -f "Config.xcconfig" ]; then
+    echo "error: Config.xcconfig not found. Copy the template and set your Apple Team ID:"
+    echo "         cp Config.xcconfig.example Config.xcconfig"
+    echo "       then edit Config.xcconfig and set DEVELOPMENT_TEAM (Xcode → Settings →"
+    echo "       Accounts → your team). A free Apple ID works. Then re-run ./build.sh."
+    exit 1
+fi
 
 # 1. Regenerate project (only if project.yml exists — ReSign may not use xcodegen)
 if [ -f "project.yml" ]; then
