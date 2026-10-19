@@ -15,6 +15,7 @@
 		RS0009 /* ProjectDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0010 /* ProjectDiscovery.swift */; };
 		RS0011 /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0012 /* ProjectStore.swift */; };
 		RS0013 /* BuildRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0014 /* BuildRunner.swift */; };
+		RS9001 /* BuildErrorClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9002 /* BuildErrorClassifier.swift */; };
 		RS0015 /* DeviceLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0016 /* DeviceLocator.swift */; };
 		RS0017 /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0018 /* Scheduler.swift */; };
 		RS0019 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0020 /* NotificationManager.swift */; };
@@ -37,6 +38,7 @@
 		RS0010 /* ProjectDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDiscovery.swift; sourceTree = "<group>"; };
 		RS0012 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStore.swift; sourceTree = "<group>"; };
 		RS0014 /* BuildRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildRunner.swift; sourceTree = "<group>"; };
+		RS9002 /* BuildErrorClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildErrorClassifier.swift; sourceTree = "<group>"; };
 		RS0016 /* DeviceLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLocator.swift; sourceTree = "<group>"; };
 		RS0018 /* Scheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scheduler.swift; sourceTree = "<group>"; };
 		RS0020 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
@@ -111,6 +113,7 @@
 				RS0010 /* ProjectDiscovery.swift */,
 				RS0012 /* ProjectStore.swift */,
 				RS0014 /* BuildRunner.swift */,
+				RS9002 /* BuildErrorClassifier.swift */,
 				RS0016 /* DeviceLocator.swift */,
 				RS0018 /* Scheduler.swift */,
 				RS0020 /* NotificationManager.swift */,
@@ -226,6 +229,7 @@
 				RS0009 /* ProjectDiscovery.swift in Sources */,
 				RS0011 /* ProjectStore.swift in Sources */,
 				RS0013 /* BuildRunner.swift in Sources */,
+				RS9001 /* BuildErrorClassifier.swift in Sources */,
 				RS0015 /* DeviceLocator.swift in Sources */,
 				RS0017 /* Scheduler.swift in Sources */,
 				RS0019 /* NotificationManager.swift in Sources */,

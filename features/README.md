@@ -8,6 +8,7 @@ This map is partial. It grows one feature at a time, as each is changed.
 
 | Feature | File | Platforms | Driveable headless? |
 |---|---|---|---|
+| Build failure messages | [build-errors.md](build-errors.md) | macOS | Yes |
 | Rebuild after Xcode sign-in | [xcode-sign-in.md](xcode-sign-in.md) | macOS | No check yet |
 
 ## What counts as a feature
@@ -37,7 +38,7 @@ this map and its files in step, then every drive.
 
 A feature's check is `drive/<name>.sh`. `./build.sh drive` runs them all and
 `./build.sh drive <name>` runs one; a name with no script is an error. There
-are none yet, and no test target.
+is no test target; a drive can compile a pure source file with `swiftc`.
 
 ReSign's features depend on Xcode's sign-in state, a paired iPhone and real
 `xcodebuild` runs, so most of them can't be driven headless as they stand.

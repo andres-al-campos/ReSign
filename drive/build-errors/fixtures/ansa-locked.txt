@@ -1,0 +1,10 @@
+→ xcodegen generate
+** BUILD SUCCEEDED **
+/Users/alejandro/Projects/Code/Ansa/ios/Info.plist: warning: All interface orientations must be supported unless the app requires full screen.
+Built and signed: build/Ansa.app
+Installing to the phone…
+Install failed: the iPhone is locked.
+
+Unlock it and keep it unlocked until the install finishes, then run this again.
+
+The signed app is at build/Ansa.app if you would rather install it from Xcode.

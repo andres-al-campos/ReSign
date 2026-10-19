@@ -1,0 +1,5 @@
+→ Installing to device 759451F7-CE07-5641-BAFE-1010BA5BACD9
+ERROR: The device is locked. (com.apple.dt.CoreDeviceError error 4000 (0xFA0))
+       DeviceIdentifier = 759451F7-CE07-5641-BAFE-1010BA5BACD9
+       NSURL = file:///Library/Developer/DeveloperDiskImages/iOS_DDI/Restore/
+       NSUnderlyingError = Error Domain=com.apple.MobileDevice.error Code=-402652958 "kAMDMobileImageMounterDeviceLocked"
