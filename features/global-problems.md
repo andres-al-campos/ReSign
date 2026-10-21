@@ -9,6 +9,10 @@ stays until the cause is fixed; it has no close button.
 - **Xcode older than the phone's iOS.** The banner names both versions and has
   an Open App Store button. One notification is sent when the mismatch is
   first noticed; clicking it opens the App Store too.
+- **…when macOS has to be updated first.** If the App Store's current Xcode
+  needs a newer macOS than this Mac runs, the App Store shows no update. The
+  banner then names that Xcode, the macOS it needs and the Mac's macOS, and
+  its button opens Software Update instead.
 - **Signed out of Xcode.** The banner has an Open Xcode accounts button, which
   opens Settings → Accounts and starts the close sign-in watch (see
   [xcode-sign-in.md](xcode-sign-in.md)). It shows whenever Xcode is signed
@@ -25,8 +29,10 @@ Open the popup while the phone runs a newer major iOS than Xcode's iOS SDK
 ## Driving it
 
 `./build.sh drive xcode-behind` compiles the version comparison alone and runs
-it on saved `devicectl` output in `drive/xcode-behind/fixtures/`. It observes
-whether a phone and SDK version pair counts as behind. The banner, icon and
+it on saved `devicectl` output and an App Store lookup in
+`drive/xcode-behind/fixtures/`. It observes whether a phone and SDK version
+pair counts as behind, and whether this Mac's macOS is too old for the App
+Store's Xcode. The banner, icon and
 notification aren't driven; they need the running app.
 
 ## Gotchas
@@ -42,3 +48,9 @@ notification aren't driven; they need the running app.
   support. The banner clears on the SDK version alone, so an install right
   after the update can still fail with the disk-image error.
 - A phone that doesn't answer keeps its last reading.
+- The macOS requirement comes from Apple's public lookup,
+  `itunes.apple.com/lookup?id=497799835` (`version`, `minimumOsVersion`). It is
+  asked only while Xcode is behind, and if it fails the banner falls back to
+  "Update Xcode".
+- It describes the App Store's newest Xcode, which is assumed to support the
+  phone's iOS. Between an iOS release and its Xcode that isn't true.

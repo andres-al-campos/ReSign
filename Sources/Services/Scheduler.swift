@@ -159,8 +159,12 @@ final class Scheduler {
             }
         }
         guard let phoneOS, let sdk = await DeviceLocator.xcodeSDKVersion() else { return }
-        let problem = GlobalProblem.xcodeBehind(phoneOS: phoneOS, sdk: sdk)
         let behind = XcodeCompatibility.isBehind(phoneOS: phoneOS, sdk: sdk)
+        // Only asked when behind: it's the one network call in the check.
+        let first = behind ? await XcodeUpdate.blockedByMacOS().map {
+            GlobalProblem.MacOSFirst(xcode: $0.xcode, minimumMacOS: $0.minimumMacOS, macOS: XcodeUpdate.macOSVersion)
+        } : nil
+        let problem = GlobalProblem.xcodeBehind(phoneOS: phoneOS, sdk: sdk, macOSFirst: first)
         if store.setGlobalProblem(problem, active: behind) {
             notifications?.sendXcodeBehindNotification(problem)
         } else if !behind {

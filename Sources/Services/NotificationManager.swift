@@ -110,6 +110,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         content.body = problem.detail
         content.sound = .default
         content.categoryIdentifier = "XCODE_BEHIND"
+        if case .xcodeBehind(_, _, let first) = problem { content.userInfo = ["macOSFirst": first != nil] }
         let request = UNNotificationRequest(
             identifier: Self.xcodeBehindNotificationID,
             content: content,
@@ -148,7 +149,10 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
 
         if isBodyClick && category == "XCODE_BEHIND" {
-            Task { @MainActor in XcodeUpdate.openAppStore() }
+            let macOSFirst = response.notification.request.content.userInfo["macOSFirst"] as? Bool == true
+            Task { @MainActor in
+                if macOSFirst { XcodeUpdate.openSoftwareUpdate() } else { XcodeUpdate.openAppStore() }
+            }
             return
         }
 

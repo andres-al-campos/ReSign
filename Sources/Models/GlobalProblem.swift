@@ -5,7 +5,15 @@ import Foundation
 /// cause is fixed; there's nothing to dismiss.
 enum GlobalProblem: Equatable, Identifiable {
     case signedOut
-    case xcodeBehind(phoneOS: String, sdk: String)
+    /// `macOSFirst` is set when the Xcode that would fix it needs a newer
+    /// macOS than this Mac runs, so the App Store shows no update.
+    case xcodeBehind(phoneOS: String, sdk: String, macOSFirst: MacOSFirst? = nil)
+
+    struct MacOSFirst: Equatable {
+        let xcode: String
+        let minimumMacOS: String
+        let macOS: String
+    }
 
     var id: String {
         switch self {
@@ -25,15 +33,18 @@ enum GlobalProblem: Equatable, Identifiable {
         switch self {
         case .signedOut:
             "Sign in with your Apple ID in Xcode → Settings → Accounts. ReSign rebuilds as soon as you're signed in."
-        case .xcodeBehind(let phoneOS, let sdk):
+        case .xcodeBehind(let phoneOS, let sdk, nil):
             "Your iPhone runs iOS \(phoneOS) and this Xcode installs up to iOS \(sdk). Update Xcode, then open it once."
+        case .xcodeBehind(let phoneOS, let sdk, let first?):
+            "Your iPhone runs iOS \(phoneOS) and this Xcode installs up to iOS \(sdk). Xcode \(first.xcode) needs macOS \(first.minimumMacOS) and this Mac runs \(first.macOS), so update macOS first, then Xcode, then open Xcode once."
         }
     }
 
     var actionLabel: String {
         switch self {
         case .signedOut: "Open Xcode accounts"
-        case .xcodeBehind: "Open App Store"
+        case .xcodeBehind(_, _, nil): "Open App Store"
+        case .xcodeBehind: "Open Software Update"
         }
     }
 }

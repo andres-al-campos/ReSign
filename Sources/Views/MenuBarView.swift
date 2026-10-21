@@ -46,7 +46,8 @@ struct MenuBarView: View {
                 GlobalProblemBanner(problem: problem) {
                     switch problem {
                     case .signedOut: scheduler.openXcodeAccounts()
-                    case .xcodeBehind: XcodeUpdate.openAppStore()
+                    case .xcodeBehind(_, _, nil): XcodeUpdate.openAppStore()
+                    case .xcodeBehind: XcodeUpdate.openSoftwareUpdate()
                     }
                 }
                 Divider()

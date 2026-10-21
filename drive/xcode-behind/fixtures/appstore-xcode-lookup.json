@@ -1,0 +1,12 @@
+{
+  "resultCount": 1,
+  "results": [
+    {
+      "trackId": 497799835,
+      "trackName": "Xcode",
+      "version": "27.1",
+      "minimumOsVersion": "26.6",
+      "currentVersionReleaseDate": "2026-10-15T20:22:08Z"
+    }
+  ]
+}
