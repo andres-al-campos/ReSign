@@ -24,6 +24,9 @@ final class Scheduler {
     /// After the user clicks the signed-out notification, the poll runs every
     /// 2s until this time. Being signed out doesn't open it: that can last days.
     private var signInWatchUntil: Date = .distantPast
+    /// The phone's iOS version as last read. Kept between checks so a check
+    /// that only re-reads Xcode (opening the popup) doesn't need the phone.
+    private var phoneOS: String?
 
     func start(store: ProjectStore, notifications: NotificationManager, logStore: BuildLogStore) {
         self.store = store
@@ -54,11 +57,7 @@ final class Scheduler {
             Task { await self.buildProject(id: id, clean: true, manual: true) }
         }
 
-        notifications.onOpenXcode = { [weak self] in
-            XcodeAccounts.open()
-            // The user is about to sign in; watch for it closely.
-            self?.watchSignInClosely()
-        }
+        notifications.onOpenXcode = { [weak self] in self?.openXcodeAccounts() }
 
         notifications.onOpenProject = { [weak self] id in
             guard let self,
@@ -91,6 +90,8 @@ final class Scheduler {
             guard changes.contains(where: { if case .added = $0 { return true } else { return false } }) else { return }
             Task { @MainActor [weak self] in
                 guard let self else { return }
+                // It may have come back from an iOS update.
+                await self.checkXcodeCompatibility()
                 // The announcement can land a few seconds before the phone
                 // accepts connections, so try once more if the first probe misses.
                 if await self.checkPhoneReturned() { return }
@@ -137,8 +138,39 @@ final class Scheduler {
 
     // MARK: - Private
 
+    /// Opens Xcode at Settings → Accounts and watches closely for the sign-in.
+    func openXcodeAccounts() {
+        XcodeAccounts.open()
+        watchSignInClosely()
+    }
+
+    /// Is this Xcode too old to install to the phone? Checked at launch, on
+    /// wake, on each scheduled pass and when the phone announces itself: the
+    /// moments the phone's iOS can have changed. `phone: false` re-reads only
+    /// Xcode, for when the popup opens after an Xcode update. A phone that
+    /// doesn't answer keeps the last reading.
+    func checkXcodeCompatibility(phone readPhone: Bool = true) async {
+        guard let store else { return }
+        if readPhone || phoneOS == nil {
+            let preferredID = UserDefaults.standard.string(forKey: "selectedDeviceID")
+            if let device = try? await DeviceLocator.findDevice(preferredID: preferredID),
+               let version = await DeviceLocator.osVersion(device.id) {
+                phoneOS = version
+            }
+        }
+        guard let phoneOS, let sdk = await DeviceLocator.xcodeSDKVersion() else { return }
+        let problem = GlobalProblem.xcodeBehind(phoneOS: phoneOS, sdk: sdk)
+        let behind = XcodeCompatibility.isBehind(phoneOS: phoneOS, sdk: sdk)
+        if store.setGlobalProblem(problem, active: behind) {
+            notifications?.sendXcodeBehindNotification(problem)
+        } else if !behind {
+            notifications?.clearXcodeBehindNotification()
+        }
+    }
+
     private func checkDueProjects() async {
         guard let store else { return }
+        await checkXcodeCompatibility()
         // Projects waiting on the phone are rebuilt when it answers; retrying
         // them here would only repeat the "not reachable" notification.
         let due = store.projects.filter {
@@ -187,6 +219,7 @@ final class Scheduler {
         let signingState = SigningStatus.current()
         lastKnownSigningState = signingState
         if case .signedOut = signingState {
+            store.setGlobalProblem(.signedOut, active: true)
             pendingRetry.insert(id)
             store.markBuildFailed(
                 id: id,
@@ -252,6 +285,7 @@ final class Scheduler {
                         // sign-in poll rebuilds it once the account is back.
                         self.pendingRetry.insert(projectID)
                         self.lastKnownSigningState = .signedOut
+                        store.setGlobalProblem(.signedOut, active: true)
                         // Back to 2s if the close watch is still open.
                         self.scheduleSignInPoll()
                         notifications.sendSignedOutNotification()
@@ -351,6 +385,9 @@ final class Scheduler {
             return false
         }()
         lastKnownSigningState = current
+        // The banner follows Xcode's account whether or not a build is waiting.
+        if case .signedOut = current { store?.setGlobalProblem(.signedOut, active: true) }
+        if isSignedIn { store?.setGlobalProblem(.signedOut, active: false) }
 
         guard wasSignedOut, isSignedIn else { return }
 

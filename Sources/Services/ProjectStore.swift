@@ -5,6 +5,9 @@ import Observation
 @MainActor
 final class ProjectStore {
     private(set) var projects: [ManagedProject] = []
+    /// Problems that block every project, shown in the popup's banner. Not
+    /// saved: each is re-detected at launch.
+    private(set) var globalProblems: [GlobalProblem] = []
 
     private var storeURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -133,6 +136,20 @@ final class ProjectStore {
 
     func updateBuildPhase(id: UUID, phase: String) {
         update(id: id) { $0.buildPhase = phase }
+    }
+
+    /// Adds, replaces or clears the problem of `problem`'s kind. Returns true
+    /// when a problem of that kind wasn't showing before.
+    @discardableResult
+    func setGlobalProblem(_ problem: GlobalProblem, active: Bool) -> Bool {
+        let existing = globalProblems.firstIndex { $0.id == problem.id }
+        switch (active, existing) {
+        case (true, nil): globalProblems.append(problem); return true
+        case (true, let i?): if globalProblems[i] != problem { globalProblems[i] = problem }
+        case (false, let i?): globalProblems.remove(at: i)
+        case (false, nil): break
+        }
+        return false
     }
 
     // MARK: - Private

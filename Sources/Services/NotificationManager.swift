@@ -100,6 +100,29 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             .removePendingNotificationRequests(withIdentifiers: [Self.signedOutNotificationID])
     }
 
+    private static let xcodeBehindNotificationID = "xcode-behind"
+
+    /// Sent once when the mismatch is first noticed; the popup's banner keeps
+    /// showing it after this is dismissed.
+    func sendXcodeBehindNotification(_ problem: GlobalProblem) {
+        let content = UNMutableNotificationContent()
+        content.title = problem.title
+        content.body = problem.detail
+        content.sound = .default
+        content.categoryIdentifier = "XCODE_BEHIND"
+        let request = UNNotificationRequest(
+            identifier: Self.xcodeBehindNotificationID,
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    func clearXcodeBehindNotification() {
+        UNUserNotificationCenter.current()
+            .removeDeliveredNotifications(withIdentifiers: [Self.xcodeBehindNotificationID])
+    }
+
     // MARK: - UNUserNotificationCenterDelegate
 
     nonisolated func userNotificationCenter(
@@ -121,6 +144,11 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         // Signed-out: button or body-click opens Xcode.
         if action == "OPEN_XCODE" || (isBodyClick && category == "SIGNED_OUT") {
             Task { @MainActor in self.onOpenXcode?() }
+            return
+        }
+
+        if isBodyClick && category == "XCODE_BEHIND" {
+            Task { @MainActor in XcodeUpdate.openAppStore() }
             return
         }
 

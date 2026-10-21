@@ -42,6 +42,16 @@ struct MenuBarView: View {
 
             Divider()
 
+            ForEach(store.globalProblems) { problem in
+                GlobalProblemBanner(problem: problem) {
+                    switch problem {
+                    case .signedOut: scheduler.openXcodeAccounts()
+                    case .xcodeBehind: XcodeUpdate.openAppStore()
+                    }
+                }
+                Divider()
+            }
+
             if showSettings {
                 SettingsPanel()
             } else {
@@ -59,6 +69,9 @@ struct MenuBarView: View {
             .padding(.vertical, 10)
         }
         .frame(width: 300)
+        // Xcode may have been updated since the last check; reading its
+        // version is local and quick, so clear a stale banner on open.
+        .onAppear { Task { await scheduler.checkXcodeCompatibility(phone: false) } }
         .onHover { inside in
             // macOS sometimes shows a resize cursor over dividers / scroll
             // edges in a MenuBarExtra window. Force the arrow cursor while
@@ -390,6 +403,38 @@ private struct ProjectCardRow: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Global Problem Banner
+
+/// One problem that blocks every project. No close button: it goes away when
+/// the cause is fixed.
+private struct GlobalProblemBanner: View {
+    let problem: GlobalProblem
+    let action: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 13))
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(problem.title)
+                    .font(.subheadline.weight(.semibold))
+                Text(problem.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button(problem.actionLabel, action: action)
+                    .controlSize(.small)
+                    .padding(.top, 4)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.orange.opacity(0.12))
     }
 }
 

@@ -1,0 +1,10 @@
+{
+  "result": {
+    "deviceProperties": {
+      "osVersionNumber": "27.0.1",
+      "osBuildUpdate": "24A446",
+      "ddiServicesAvailable": false,
+      "developerModeStatus": "enabled"
+    }
+  }
+}

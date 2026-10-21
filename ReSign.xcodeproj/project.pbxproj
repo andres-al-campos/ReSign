@@ -11,11 +11,14 @@
 		RS0001 /* ReSignApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0002 /* ReSignApp.swift */; };
 		RS0003 /* ManagedProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0004 /* ManagedProject.swift */; };
 		RS0005 /* BuildResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0006 /* BuildResult.swift */; };
+		RS9003 /* GlobalProblem.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9004 /* GlobalProblem.swift */; };
 		RS0007 /* DeviceInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0008 /* DeviceInfo.swift */; };
 		RS0009 /* ProjectDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0010 /* ProjectDiscovery.swift */; };
 		RS0011 /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0012 /* ProjectStore.swift */; };
 		RS0013 /* BuildRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0014 /* BuildRunner.swift */; };
 		RS9001 /* BuildErrorClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9002 /* BuildErrorClassifier.swift */; };
+		RS9005 /* XcodeCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9006 /* XcodeCompatibility.swift */; };
+		RS9007 /* XcodeUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9008 /* XcodeUpdate.swift */; };
 		RS0015 /* DeviceLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0016 /* DeviceLocator.swift */; };
 		RS0017 /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0018 /* Scheduler.swift */; };
 		RS0019 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0020 /* NotificationManager.swift */; };
@@ -34,11 +37,14 @@
 		RS0002 /* ReSignApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReSignApp.swift; sourceTree = "<group>"; };
 		RS0004 /* ManagedProject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProject.swift; sourceTree = "<group>"; };
 		RS0006 /* BuildResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildResult.swift; sourceTree = "<group>"; };
+		RS9004 /* GlobalProblem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalProblem.swift; sourceTree = "<group>"; };
 		RS0008 /* DeviceInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfo.swift; sourceTree = "<group>"; };
 		RS0010 /* ProjectDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDiscovery.swift; sourceTree = "<group>"; };
 		RS0012 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStore.swift; sourceTree = "<group>"; };
 		RS0014 /* BuildRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildRunner.swift; sourceTree = "<group>"; };
 		RS9002 /* BuildErrorClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildErrorClassifier.swift; sourceTree = "<group>"; };
+		RS9006 /* XcodeCompatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XcodeCompatibility.swift; sourceTree = "<group>"; };
+		RS9008 /* XcodeUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XcodeUpdate.swift; sourceTree = "<group>"; };
 		RS0016 /* DeviceLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceLocator.swift; sourceTree = "<group>"; };
 		RS0018 /* Scheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scheduler.swift; sourceTree = "<group>"; };
 		RS0020 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
@@ -103,6 +109,7 @@
 				RS0004 /* ManagedProject.swift */,
 				RS0006 /* BuildResult.swift */,
 				RS0008 /* DeviceInfo.swift */,
+				RS9004 /* GlobalProblem.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -115,6 +122,8 @@
 				RS0014 /* BuildRunner.swift */,
 				RS9002 /* BuildErrorClassifier.swift */,
 				RS0016 /* DeviceLocator.swift */,
+				RS9008 /* XcodeUpdate.swift */,
+				RS9006 /* XcodeCompatibility.swift */,
 				RS0018 /* Scheduler.swift */,
 				RS0020 /* NotificationManager.swift */,
 				RS0030 /* BuildLogStore.swift */,
@@ -226,11 +235,14 @@
 				RS0003 /* ManagedProject.swift in Sources */,
 				RS0005 /* BuildResult.swift in Sources */,
 				RS0007 /* DeviceInfo.swift in Sources */,
+				RS9003 /* GlobalProblem.swift in Sources */,
 				RS0009 /* ProjectDiscovery.swift in Sources */,
 				RS0011 /* ProjectStore.swift in Sources */,
 				RS0013 /* BuildRunner.swift in Sources */,
 				RS9001 /* BuildErrorClassifier.swift in Sources */,
 				RS0015 /* DeviceLocator.swift in Sources */,
+				RS9007 /* XcodeUpdate.swift in Sources */,
+				RS9005 /* XcodeCompatibility.swift in Sources */,
 				RS0017 /* Scheduler.swift in Sources */,
 				RS0019 /* NotificationManager.swift in Sources */,
 				RS0021 /* MenuBarView.swift in Sources */,

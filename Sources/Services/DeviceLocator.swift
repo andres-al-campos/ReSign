@@ -47,6 +47,22 @@ enum DeviceLocator {
         await run(["xcrun", "devicectl", "device", "info", "details", "--device", id, "--timeout", "10"]).exitCode == 0
     }
 
+    /// The phone's iOS version, e.g. "27.0.1", or nil when it doesn't answer.
+    static func osVersion(_ id: String) async -> String? {
+        let result = await run(["xcrun", "devicectl", "device", "info", "details", "--device", id, "--timeout", "10", "--json-output", "-"])
+        guard result.exitCode == 0, let data = result.output.data(using: .utf8) else { return nil }
+        return XcodeCompatibility.phoneOSVersion(fromDetailsJSON: data)
+    }
+
+    /// The iOS SDK version of the selected Xcode, e.g. "26.2": the newest iOS
+    /// it can install to, by major version. Local and fast.
+    static func xcodeSDKVersion() async -> String? {
+        let result = await run(["xcrun", "--sdk", "iphoneos", "--show-sdk-version"])
+        guard result.exitCode == 0 else { return nil }
+        let version = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+        return version.isEmpty ? nil : version
+    }
+
     private static func run(_ arguments: [String]) async -> (output: String, exitCode: Int32) {
         await withCheckedContinuation { continuation in
             let process = Process()

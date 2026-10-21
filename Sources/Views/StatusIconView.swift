@@ -19,6 +19,7 @@ struct StatusIconView: View {
         // how you say "stop telling me about this one", so it must not keep the
         // icon red or orange forever.
         let active = store.projects.filter { !$0.isHidden }
+        if !store.globalProblems.isEmpty { return .red.opacity(0.8) }
         if active.contains(where: { $0.lastError != nil }) { return .red.opacity(0.8) }
         if active.contains(where: { $0.isExpired }) { return .orange.opacity(0.8) }
         return .green.opacity(0.8)
