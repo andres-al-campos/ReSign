@@ -33,3 +33,6 @@ phase for each.
 - `devicectl-locked.txt` is reconstructed from devicectl's error format, not
   captured; `ansa-locked.txt` follows Ansa's build.sh text with the progress
   lines abbreviated.
+- devicectl words the disk-image failure more than one way. Xcode 26.3 with
+  an iOS 27 phone says "developer disk image could not be mounted" (error
+  12040); `timekeep-ddi-12040.txt` is that output, captured 2026-10-21.

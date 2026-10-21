@@ -1,0 +1,8 @@
+=== build.sh ===
+→ xcodebuild (Timekeep, Debug, signed)
+** BUILD SUCCEEDED **
+✓ Built & signed: build/Timekeep.app
+→ Installing to device 759451F7-CE07-5641-BAFE-1010BA5BACD9
+ERROR: The developer disk image could not be mounted on this device. (com.apple.dt.CoreDeviceError error 12040 (0x2F08))
+15:52:07  Acquired tunnel connection to device.
+15:52:07  Enabling developer disk image services.

@@ -31,6 +31,9 @@ expect("devicectl locked error reads as locked, not as iOS too new",
 
 expect("a real disk-image mismatch still reads as iOS too new",
        BuildErrorClassifier.classify("Unable to mount developer disk image").message, contains: "newer than this Xcode")
+// Timekeep's build.sh on 2026-10-21: iOS 27.0.1 phone, Xcode 26.3.
+expect("devicectl's \"could not be mounted\" (error 12040) reads as iOS too new",
+       BuildErrorClassifier.classify(fixture("timekeep-ddi-12040.txt")).message, contains: "newer than this Xcode")
 expect("no message at all falls back to the generic line",
        BuildErrorClassifier.classify("** BUILD FAILED **\n").message, contains: "Check the build log")
 

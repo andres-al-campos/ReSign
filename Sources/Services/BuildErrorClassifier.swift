@@ -56,7 +56,8 @@ enum BuildErrorClassifier {
         if output.contains("Unable to mount developer disk image")
             || output.contains("DeveloperDiskImage")
             || output.contains("Failed to mount the developer disk image")
-            || output.contains("could not find a developer disk image") {
+            || output.contains("could not find a developer disk image")
+            || output.contains("developer disk image could not be mounted") {
             return ("Your iPhone's iOS is newer than this Xcode supports, so the debug image won't mount. Update Xcode from the App Store (or install the matching iOS support files), then rebuild.", .generic)
         }
         // MIFreeProfileValidatedAppTracker is the iOS subsystem that tracks apps
