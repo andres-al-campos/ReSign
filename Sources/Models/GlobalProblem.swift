@@ -37,7 +37,7 @@ enum GlobalProblem: Equatable, Identifiable {
     var detail: String {
         switch self {
         case .signedOut:
-            "Sign in with your Apple ID in Xcode → Settings → Accounts. ReSign rebuilds as soon as you're signed in."
+            "ReSign won't rebuild your apps until you sign in with your Apple ID in Xcode → Settings → Accounts."
         case .licenseNotAccepted:
             "Xcode updated and won't build until you agree to its new license. Open Xcode and agree, or run sudo xcodebuild -license accept in Terminal."
         case .xcodeBehind(let phoneOS, let sdk, nil):

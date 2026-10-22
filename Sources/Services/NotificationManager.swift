@@ -82,7 +82,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     func sendSignedOutNotification() {
         let content = UNMutableNotificationContent()
         content.title = "Not signed in to Xcode"
-        content.body = "Click to open Xcode → Settings → Accounts and sign in with your Apple ID. ReSign rebuilds as soon as you're signed in."
+        content.body = "Click to open Xcode → Settings → Accounts and sign in with your Apple ID. ReSign won't rebuild your apps until you do."
         content.sound = .default
         content.categoryIdentifier = "SIGNED_OUT"
         let request = UNNotificationRequest(
