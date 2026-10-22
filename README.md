@@ -28,7 +28,11 @@ ReSign scans one level deep inside the projects folder, looking for `ProjectName
 
 ## Troubleshooting
 
+Problems that stop every project, like Xcode being signed out, too old for your iPhone, or waiting on a license, show as a banner at the top of the popup until they're fixed, with a button that takes you to the fix.
+
 **"Not signed in to Xcode"** — Open Xcode → Settings → Accounts and sign in with your Apple ID. ReSign will automatically retry any pending builds once it detects you're signed in.
+
+**"Xcode is too old for your iPhone"** — Your iPhone got a major iOS update that this Xcode can't install to. Update Xcode and open it once. If the App Store shows no update, the new Xcode needs a newer macOS; the banner names which.
 
 **"No iPhone found"** — Make sure your iPhone is connected via USB and unlocked, or that Wi-Fi pairing is active in Xcode → Devices and Simulators. ReSign uses `devicectl` and requires macOS 14+.
 

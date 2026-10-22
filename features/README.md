@@ -10,6 +10,7 @@ This map is partial. It grows one feature at a time, as each is changed.
 |---|---|---|---|
 | Build failure messages | [build-errors.md](build-errors.md) | macOS | Yes |
 | Problems that block every project | [global-problems.md](global-problems.md) | macOS | Partly |
+| Settings | [settings.md](settings.md) | macOS | No check yet |
 | Rebuild after Xcode sign-in | [xcode-sign-in.md](xcode-sign-in.md) | macOS | No check yet |
 
 ## What counts as a feature

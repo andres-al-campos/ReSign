@@ -17,7 +17,10 @@ stays until the cause is fixed; it has no close button.
   opens Settings → Accounts and starts the close sign-in watch (see
   [xcode-sign-in.md](xcode-sign-in.md)). It shows whenever Xcode is signed
   out, whether or not a build is waiting.
-- Both can show at once, one banner each.
+- **Xcode license not accepted.** After a macOS or Xcode update, xcodebuild
+  won't run until the new license is accepted. The banner's Open Xcode button
+  opens Xcode, which asks for it.
+- Several can show at once, one banner each.
 - The menu bar icon is red while any banner shows, whatever the projects'
   state.
 
@@ -35,7 +38,14 @@ pair counts as behind, and whether this Mac's macOS is too old for the App
 Store's Xcode. The banner, icon and
 notification aren't driven; they need the running app.
 
+Last seen by hand: 2026-10-21. The Xcode-behind banner showed on macOS
+26.5.1 with Xcode 26.3 and an iOS 27 phone, and cleared on its own after
+updating to Xcode 27.1. The license banner hasn't been seen yet.
+
 ## Gotchas
+
+- The license is checked with `xcodebuild -license check` at the same moments
+  as the version, including each popup open.
 
 - Only major versions are compared. Since iOS 17 a disk image covers a whole
   major version, so iOS 26.4 installs from an Xcode whose SDK is 26.2.

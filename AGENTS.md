@@ -11,3 +11,6 @@ Features are mapped in `features/`; read the map before adding one.
   repeats the same news on every row. The banner sits at the top of the
   popup, has no close button, and turns the menu bar icon red. (2026-10-21,
   after an iOS 27 update left Xcode 26 unable to install.)
+- **The popup opens at its final size.** See "A menu bar popup opens at its
+  final size" in `../AGENTS.md`; it holds for every menu bar app there.
+  (2026-10-21.)
