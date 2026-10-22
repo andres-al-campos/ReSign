@@ -616,9 +616,11 @@ private struct SettingsPanel: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         if isLoadingDevices {
+                            // Same 28pt box as the refresh button it replaces,
+                            // or the row's height changes when loading ends.
                             ProgressView()
                                 .scaleEffect(0.5)
-                                .frame(width: 12, height: 12)
+                                .frame(width: 28, height: 28)
                         } else {
                             HeaderButton(icon: "arrow.clockwise", help: "Refresh devices") {
                                 Task { await refreshDevices() }
