@@ -39,7 +39,7 @@ expect("the 12040 message says what to do when the App Store has no update",
 // xcodebuild on 2026-10-21, right after updating to macOS 27.
 expect("an unaccepted Xcode license says how to accept it",
        BuildErrorClassifier.classify("You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.").message,
-       contains: "Open Xcode and agree to it")
+       contains: "Open Xcode and agree")
 expect("no message at all falls back to the generic line",
        BuildErrorClassifier.classify("** BUILD FAILED **\n").message, contains: "Check the build log")
 

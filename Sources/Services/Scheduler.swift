@@ -229,7 +229,7 @@ final class Scheduler {
             pendingRetry.insert(id)
             store.markBuildFailed(
                 id: id,
-                error: "Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in — ReSign rebuilds after you do."
+                error: "\(GlobalProblem.signedOut.title). \(GlobalProblem.signedOut.detail)"
             )
             // Only one notification, no matter how many projects are due.
             notifications.sendSignedOutNotification()

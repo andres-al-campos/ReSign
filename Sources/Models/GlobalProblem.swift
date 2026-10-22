@@ -2,7 +2,8 @@ import Foundation
 
 /// A problem that blocks every project at once, so it's shown once, in the
 /// popup's banner, rather than as an error on each project. It stays until the
-/// cause is fixed; there's nothing to dismiss.
+/// cause is fixed; there's nothing to dismiss. Its title and detail are also
+/// the wording of the matching notification and per-project error.
 enum GlobalProblem: Equatable, Identifiable {
     case signedOut
     /// After a macOS or Xcode update, xcodebuild refuses to run until the new

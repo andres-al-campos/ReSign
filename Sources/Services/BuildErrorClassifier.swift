@@ -13,7 +13,7 @@ enum BuildErrorClassifier {
 
     static func classify(_ output: String) -> (message: String, kind: BuildErrorKind) {
         if output.contains("No Accounts") {
-            return ("Not signed in to Xcode. Open Xcode → Settings → Accounts and sign in with your Apple ID, then try again.", .signedOut)
+            return ("\(GlobalProblem.signedOut.title). \(GlobalProblem.signedOut.detail)", .signedOut)
         }
         // The phone left Wi-Fi (or locked hard) partway through. The build
         // itself is fine; it only needs the phone back.
@@ -40,7 +40,7 @@ enum BuildErrorClassifier {
         // After a macOS or Xcode update every xcodebuild refuses to run until
         // the new license is accepted, which needs an admin password.
         if output.contains("not agreed to the Xcode license") {
-            return ("The Xcode license hasn't been accepted since the last update. Open Xcode and agree to it (or run sudo xcodebuild -license accept), then rebuild.", .generic)
+            return ("\(GlobalProblem.licenseNotAccepted.title). \(GlobalProblem.licenseNotAccepted.detail)", .generic)
         }
         // xcode-select points at the Command Line Tools instead of full Xcode —
         // common after an OS/Xcode update. Retrying can't fix it; the user has to
