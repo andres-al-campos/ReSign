@@ -5,6 +5,9 @@ import Foundation
 /// cause is fixed; there's nothing to dismiss.
 enum GlobalProblem: Equatable, Identifiable {
     case signedOut
+    /// After a macOS or Xcode update, xcodebuild refuses to run until the new
+    /// license is accepted.
+    case licenseNotAccepted
     /// `macOSFirst` is set when the Xcode that would fix it needs a newer
     /// macOS than this Mac runs, so the App Store shows no update.
     case xcodeBehind(phoneOS: String, sdk: String, macOSFirst: MacOSFirst? = nil)
@@ -18,6 +21,7 @@ enum GlobalProblem: Equatable, Identifiable {
     var id: String {
         switch self {
         case .signedOut: "signed-out"
+        case .licenseNotAccepted: "license"
         case .xcodeBehind: "xcode-behind"
         }
     }
@@ -25,6 +29,7 @@ enum GlobalProblem: Equatable, Identifiable {
     var title: String {
         switch self {
         case .signedOut: "Not signed in to Xcode"
+        case .licenseNotAccepted: "Xcode's license needs accepting"
         case .xcodeBehind: "Xcode is too old for your iPhone"
         }
     }
@@ -33,6 +38,8 @@ enum GlobalProblem: Equatable, Identifiable {
         switch self {
         case .signedOut:
             "Sign in with your Apple ID in Xcode → Settings → Accounts. ReSign rebuilds as soon as you're signed in."
+        case .licenseNotAccepted:
+            "Xcode updated and won't build until you agree to its new license. Open Xcode and agree, or run sudo xcodebuild -license accept in Terminal."
         case .xcodeBehind(let phoneOS, let sdk, nil):
             "Your iPhone runs iOS \(phoneOS) and this Xcode installs up to iOS \(sdk). Update Xcode, then open it once."
         case .xcodeBehind(let phoneOS, let sdk, let first?):
@@ -43,6 +50,7 @@ enum GlobalProblem: Equatable, Identifiable {
     var actionLabel: String {
         switch self {
         case .signedOut: "Open Xcode accounts"
+        case .licenseNotAccepted: "Open Xcode"
         case .xcodeBehind(_, _, nil): "Open App Store"
         case .xcodeBehind: "Open Software Update"
         }

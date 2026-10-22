@@ -6,6 +6,13 @@ enum XcodeUpdate {
         NSWorkspace.shared.open(URL(string: "macappstore://apps.apple.com/app/id497799835")!)
     }
 
+    /// Opening Xcode shows its license prompt when one is pending.
+    static func openXcode() {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.dt.Xcode") {
+            NSWorkspace.shared.openApplication(at: url, configuration: .init())
+        }
+    }
+
     static func openSoftwareUpdate() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Software-Update-Settings.extension")!)
     }

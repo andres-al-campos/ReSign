@@ -37,6 +37,11 @@ enum BuildErrorClassifier {
         if output.contains("could not find module") {
             return ("Missing Swift module or dependency. This is often a stale build cache — try Clean & Retry, or resolve packages in Xcode.", .staleCache)
         }
+        // After a macOS or Xcode update every xcodebuild refuses to run until
+        // the new license is accepted, which needs an admin password.
+        if output.contains("not agreed to the Xcode license") {
+            return ("The Xcode license hasn't been accepted since the last update. Open Xcode and agree to it (or run sudo xcodebuild -license accept), then rebuild.", .generic)
+        }
         // xcode-select points at the Command Line Tools instead of full Xcode —
         // common after an OS/Xcode update. Retrying can't fix it; the user has to
         // repoint xcode-select once.
@@ -58,7 +63,7 @@ enum BuildErrorClassifier {
             || output.contains("Failed to mount the developer disk image")
             || output.contains("could not find a developer disk image")
             || output.contains("developer disk image could not be mounted") {
-            return ("Your iPhone's iOS is newer than this Xcode supports, so the debug image won't mount. Update Xcode from the App Store (or install the matching iOS support files), then rebuild.", .generic)
+            return ("Your iPhone's iOS is newer than this Xcode supports, so the debug image won't mount. Update Xcode from the App Store, open it once, then rebuild. If the App Store shows no update, update macOS first; ReSign's banner says which.", .generic)
         }
         // MIFreeProfileValidatedAppTracker is the iOS subsystem that tracks apps
         // installed under *free* provisioning profiles, so seeing it in a failed

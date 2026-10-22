@@ -151,6 +151,8 @@ final class Scheduler {
     /// doesn't answer keeps the last reading.
     func checkXcodeCompatibility(phone readPhone: Bool = true) async {
         guard let store else { return }
+        // Same moments suit the license: it changes with Xcode and macOS updates.
+        store.setGlobalProblem(.licenseNotAccepted, active: !(await DeviceLocator.xcodeLicenseAccepted()))
         if readPhone || phoneOS == nil {
             let preferredID = UserDefaults.standard.string(forKey: "selectedDeviceID")
             if let device = try? await DeviceLocator.findDevice(preferredID: preferredID),

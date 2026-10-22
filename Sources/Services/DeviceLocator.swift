@@ -54,6 +54,12 @@ enum DeviceLocator {
         return XcodeCompatibility.phoneOSVersion(fromDetailsJSON: data)
     }
 
+    /// False when xcodebuild won't run until a new license is accepted.
+    /// `xcodebuild -license check` exits non-zero then. Local and fast.
+    static func xcodeLicenseAccepted() async -> Bool {
+        await run(["xcodebuild", "-license", "check"]).exitCode == 0
+    }
+
     /// The iOS SDK version of the selected Xcode, e.g. "26.2": the newest iOS
     /// it can install to, by major version. Local and fast.
     static func xcodeSDKVersion() async -> String? {
