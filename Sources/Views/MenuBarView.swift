@@ -552,12 +552,17 @@ private struct SettingsPanel: View {
     @Environment(ProjectStore.self) private var store
     @AppStorage("scanPath") private var scanPath = ""
     @AppStorage("selectedDeviceID") private var selectedDeviceID = ""
-    @State private var devices: [DeviceInfo] = []
+    // Both start from the last time the panel was open. Starting from empty
+    // made the popup resize three times on every open: to the 44pt floor,
+    // up to the measured height, then again when the device list arrived.
+    @MainActor private static var lastDevices: [DeviceInfo] = []
+    @MainActor private static var lastHeight: CGFloat = 0
+    @State private var devices: [DeviceInfo] = SettingsPanel.lastDevices
     @State private var isLoadingDevices = false
     // Reflect the saved intent (persists across reinstalls), falling back to
     // live OS status so a freshly-registered item still reads as on.
     @State private var launchAtLogin = LoginItemManager.wantsLaunchAtLogin || LoginItemManager.isEnabled
-    @State private var contentHeight: CGFloat = 0
+    @State private var contentHeight: CGFloat = SettingsPanel.lastHeight
 
     var body: some View {
         ScrollView {
@@ -653,7 +658,10 @@ private struct SettingsPanel: View {
         // Same macOS 26 collapse fix as the project list: size to content,
         // clamped into [44, 260], rather than relying on maxHeight alone.
         .frame(height: min(max(contentHeight, 44), 260))
-        .onPreferenceChange(ContentHeightKey.self) { contentHeight = $0 }
+        .onPreferenceChange(ContentHeightKey.self) {
+            contentHeight = $0
+            Self.lastHeight = $0
+        }
         .task { await refreshDevices() }
     }
 
@@ -675,5 +683,6 @@ private struct SettingsPanel: View {
         isLoadingDevices = true
         defer { isLoadingDevices = false }
         devices = (try? await DeviceLocator.findAllDevices()) ?? []
+        Self.lastDevices = devices
     }
 }
