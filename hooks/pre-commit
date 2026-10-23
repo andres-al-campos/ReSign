@@ -1,0 +1,6 @@
+#!/bin/sh
+# Stamps the docs this commit changes; see stamp-docs.mjs. Written by codecraft's
+# stamp-hook/sync.sh. Without Node the commit goes ahead unstamped, and ./build.sh check
+# says what's missing.
+command -v node >/dev/null || { echo "pre-commit: Node isn't installed, so the docs weren't stamped. Install it (brew install node), then commit again."; exit 0; }
+exec node "$(dirname "$0")/stamp-docs.mjs" ReSign.xcodeproj/project.pbxproj

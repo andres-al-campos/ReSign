@@ -11,6 +11,9 @@
 
 set -euo pipefail
 
+# The pre-commit hook stamps the docs a commit changes (hooks/stamp-docs.mjs).
+git -C "$(dirname "$0")" rev-parse --git-dir >/dev/null 2>&1 && git -C "$(dirname "$0")" config core.hooksPath hooks || true
+
 APP_NAME=ReSign
 MODE=install   # install | fast | noinstall | check | drive
 DRIVE_NAME=""
