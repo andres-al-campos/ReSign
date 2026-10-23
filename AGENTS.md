@@ -6,10 +6,19 @@ Features are mapped in `features/`; read the map before adding one.
 
 ## Principles
 
-- 2026-10-21 16:54, 1.5. **A problem that blocks every project gets a banner that stays until it's
-  fixed.** A notification can be closed by accident and a per-project error
-  repeats the same news on every row. The banner sits at the top of the
-  popup, has no close button, and turns the menu bar icon red. (After an iOS 27
-  update left Xcode 26 unable to install.)
-- 2026-10-21 19:19, 1.5. **The popup opens at its final size.** See "A menu bar popup opens at its
-  final size" in `../AGENTS.md`; it holds for every menu bar app there.
+How ReSign ought to be, so a session can decide a case nobody has met yet.
+Rulings on one thing go in that feature's file, under Calls, and name the
+principle they apply. The walled_garden `AGENTS.md` principles hold here too
+(motion spends attention; a menu bar popup opens at its final size; never a
+fight with the controls).
+
+- 2026-10-22 22:08, 1.6. **Unseen until it can't do its job.** ReSign works without being watched.
+  It asks for attention only when something stops it keeping an app
+  installed, says so once rather than once per project, and stays in front
+  of the user until the cause is fixed. (After an iOS 27 update left Xcode 26
+  unable to install.)
+- 2026-10-22 22:08, 1.6. **Every failure comes with its fix.** A message names what went wrong and
+  where to fix it, with a button to that place when there is one. The
+  project's own message beats a generic "check the build log".
+- 2026-10-22 22:08, 1.6. **It picks up on its own.** When the cause clears, ReSign carries on
+  without being asked: nobody should have to come back and press retry.
