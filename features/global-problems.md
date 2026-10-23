@@ -1,5 +1,7 @@
 # Problems that block every project
 
+Updated 2026-10-21 19:19, at 1.5.
+
 When something stops every project from installing, ReSign says so once, in a
 banner at the top of the popup, and turns the menu bar icon red. The banner
 stays until the cause is fixed; it has no close button.

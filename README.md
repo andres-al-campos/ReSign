@@ -1,5 +1,7 @@
 # ReSign
 
+Updated 2026-10-21 19:19, at 1.5.
+
 Keep your sideloaded iOS apps from expiring.
 
 ReSign is a macOS menu bar app that watches your Xcode projects and automatically rebuilds and reinstalls them to your connected iPhone before their signatures expire.

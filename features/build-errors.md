@@ -1,5 +1,7 @@
 # Build failure messages
 
+Updated 2026-10-21 15:55, at 1.5.
+
 When a rebuild fails, ReSign's message says what went wrong and how to fix it,
 and labels the failure Build or Install.
 
