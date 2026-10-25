@@ -4,7 +4,7 @@
 //   node stamp-docs.mjs --check <version file>   the law: checks the stamps in the working tree
 //
 // The version file is where the app's version lives: VERSION (plain text), a .json file with a
-// "version" field (package.json, manifest.json), or an Xcode project's MARKETING_VERSION
+// "version" field (package.json, manifest.json), a pyproject.toml's version, or an Xcode project's MARKETING_VERSION
 // (project.yml, or project.pbxproj where there's no XcodeGen).
 //
 // - A doc that describes the code (features/*.md, docs/*.md other than a changelog)
@@ -49,12 +49,13 @@ process.chdir(checking ? path.join(path.dirname(fileURLToPath(import.meta.url)),
 function parseVersion(text, file) {
   if (file.endsWith('.json')) { try { return JSON.parse(text).version; } catch { return undefined; } }
   if (/project\.(yml|pbxproj)$/.test(file)) return text.match(/MARKETING_VERSION *[:=] *"?([^";\s]+)/)?.[1];
+  if (file.endsWith('pyproject.toml')) return text.match(/^version *= *"([^"]+)"/m)?.[1];
   return text.trim();
 }
 const version = versionFile && fs.existsSync(versionFile) ? parseVersion(fs.readFileSync(versionFile, 'utf8'), versionFile) : null;
 if (!version) {
   console.error(`${who}: can't read the app's version from "${versionFile ?? ''}". ` +
-    'Pass the file that holds it (VERSION, package.json, manifest.json, project.yml or project.pbxproj) in hooks/pre-commit and the doc-stamps law, then run again.');
+    'Pass the file that holds it (VERSION, package.json, manifest.json, pyproject.toml, project.yml or project.pbxproj) in hooks/pre-commit and the doc-stamps law, then run again.');
   process.exit(1);
 }
 
