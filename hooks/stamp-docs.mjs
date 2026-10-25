@@ -7,11 +7,10 @@
 // "version" field (package.json, manifest.json), a pyproject.toml's version, or an Xcode project's MARKETING_VERSION
 // (project.yml, or project.pbxproj where there's no XcodeGen).
 //
-// - A doc that describes the code (features/*.md, docs/*.md other than a changelog)
-//   gets "Updated <time>, at <version>." under its title when its description changed. A change
+// - A feature's file (features/*.md) gets "Updated <time>, at <version>." under its title when its description changed. A change
 //   only to its Calls leaves the stamp alone: adding a ruling doesn't mean anyone read the
-//   description again. The root README isn't stamped: it's the project's front page for
-//   people, a stamp is noise above its introduction, and git log has the same date.
+//   description again. Only the decision aids are stamped, the feature files and the
+//   Principles: they're what a session decides by. Other docs (the README, docs/) aren't.
 // - Each Principle (AGENTS.md) and Call (a ## Calls section) that is new or reworded starts
 //   "<time>, <version>. ". Text that already exists word for word somewhere in HEAD keeps its
 //   time, so a Call moved between files keeps when it was made. A trailing "Applies *Name*." is
@@ -66,7 +65,7 @@ const now = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.g
 const STAMP = /^(?:Checked|Updated) .+, at \S+\.$/;
 // Also the old date-only prefix ("2026-10-13. "), so converting one isn't read as a new entry.
 const PREFIX = /^\d{4}-\d\d-\d\d(?: \d\d:\d\d, \S+?)?\. /;
-const describes = (f) => /^(features|docs)\/[^/]+\.md$/.test(f) && !/CHANGELOG\.md$/i.test(f);
+const describes = (f) => /^features\/[^/]+\.md$/.test(f);
 const hasEntries = (f) => f === 'AGENTS.md' || /^features\/[^/]+\.md$/.test(f);
 
 // The Principles and Calls in a text: { start, end, section, text, body } per entry. text is
@@ -111,7 +110,7 @@ function badCitations(docs) {
 
 if (checking) {
   const md = (dir) => fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => `${dir}/${f}`) : [];
-  const files = ['AGENTS.md', 'README.md', ...md('features'), ...md('docs')].filter((f) => fs.existsSync(f));
+  const files = ['AGENTS.md', ...md('features')].filter((f) => fs.existsSync(f));
   const docs = Object.fromEntries(files.map((f) => [f, fs.readFileSync(f, 'utf8')]));
 
   // Every version the version file has had, so a typo'd version doesn't pass for a real one.
