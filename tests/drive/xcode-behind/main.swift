@@ -1,4 +1,4 @@
-// Checks XcodeCompatibility against devicectl output. Run by drive/xcode-behind.sh.
+// Checks XcodeCompatibility against devicectl output. Run by tests/drive/xcode-behind.sh.
 import Foundation
 
 var failures = 0

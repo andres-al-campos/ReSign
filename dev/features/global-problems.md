@@ -1,6 +1,6 @@
 # Problems that block every project
 
-Updated 2026-10-21 19:19, at 1.5.
+Updated 2026-10-25 11:38, at 1.6.
 
 When something stops every project from installing, ReSign says so once, in a
 banner at the top of the popup, and turns the menu bar icon red. The banner
@@ -35,7 +35,7 @@ Open the popup while the phone runs a newer major iOS than Xcode's iOS SDK
 
 `./build.sh drive xcode-behind` compiles the version comparison alone and runs
 it on saved `devicectl` output and an App Store lookup in
-`drive/xcode-behind/fixtures/`. It observes whether a phone and SDK version
+`tests/drive/xcode-behind/fixtures/`. It observes whether a phone and SDK version
 pair counts as behind, and whether this Mac's macOS is too old for the App
 Store's Xcode. The banner, icon and
 notification aren't driven; they need the running app.

@@ -1,6 +1,6 @@
 # Settings
 
-Updated 2026-10-21 19:19, at 1.5.
+Updated 2026-10-25 11:38, at 1.6.
 
 The gear in the popup's header opens settings: launch at login, the folder
 ReSign scans for projects, and which iPhone to install to.

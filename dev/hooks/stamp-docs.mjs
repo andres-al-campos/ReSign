@@ -7,7 +7,7 @@
 // "version" field (package.json, manifest.json), a pyproject.toml's version, or an Xcode project's MARKETING_VERSION
 // (project.yml, or project.pbxproj where there's no XcodeGen).
 //
-// - A feature's file (features/*.md) gets "Updated <time>, at <version>." under its title when its description changed. A change
+// - A feature's file (dev/features/*.md, or features/*.md in the older layout) gets "Updated <time>, at <version>." under its title when its description changed. A change
 //   only to its Calls leaves the stamp alone: adding a ruling doesn't mean anyone read the
 //   description again. Only the decision aids are stamped, the feature files and the
 //   Principles: they're what a session decides by. Other docs (the README, docs/) aren't.
@@ -40,9 +40,10 @@ const who = checking ? 'doc-stamps' : 'pre-commit';
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
 const tryGit = (...args) => { try { return git(...args); } catch { return null; } };
-// The check runs on the project this copy sits in (hooks/ is one level down), git checkout or
-// not; the hook runs on the repo being committed to.
-process.chdir(checking ? path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+// The check runs on the project this copy sits in (dev/hooks/, or hooks/ in the older layout),
+// git checkout or not; the hook runs on the repo being committed to.
+const hooksParent = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+process.chdir(checking ? (path.basename(hooksParent) === 'dev' ? path.dirname(hooksParent) : hooksParent)
   : git('rev-parse', '--show-toplevel').trim());
 
 function parseVersion(text, file) {
@@ -54,7 +55,7 @@ function parseVersion(text, file) {
 const version = versionFile && fs.existsSync(versionFile) ? parseVersion(fs.readFileSync(versionFile, 'utf8'), versionFile) : null;
 if (!version) {
   console.error(`${who}: can't read the app's version from "${versionFile ?? ''}". ` +
-    'Pass the file that holds it (VERSION, package.json, manifest.json, pyproject.toml, project.yml or project.pbxproj) in hooks/pre-commit and the doc-stamps law, then run again.');
+    'Pass the file that holds it (VERSION, package.json, manifest.json, pyproject.toml, project.yml or project.pbxproj) in the pre-commit hook and the doc-stamps check, then run again.');
   process.exit(1);
 }
 
@@ -65,8 +66,8 @@ const now = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.g
 const STAMP = /^(?:Checked|Updated) .+, at \S+\.$/;
 // Also the old date-only prefix ("2026-10-13. "), so converting one isn't read as a new entry.
 const PREFIX = /^\d{4}-\d\d-\d\d(?: \d\d:\d\d, \S+?)?\. /;
-const describes = (f) => /^features\/[^/]+\.md$/.test(f);
-const hasEntries = (f) => f === 'AGENTS.md' || /^features\/[^/]+\.md$/.test(f);
+const describes = (f) => /^(dev\/)?features\/[^/]+\.md$/.test(f);
+const hasEntries = (f) => f === 'AGENTS.md' || describes(f);
 
 // The Principles and Calls in a text: { start, end, section, text, body } per entry. text is
 // the entry's lines joined; body leaves out its time and cited principle.
@@ -110,7 +111,7 @@ function badCitations(docs) {
 
 if (checking) {
   const md = (dir) => fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => `${dir}/${f}`) : [];
-  const files = ['AGENTS.md', ...md('features')].filter((f) => fs.existsSync(f));
+  const files = ['AGENTS.md', ...md('dev/features'), ...md('features')].filter((f) => fs.existsSync(f));
   const docs = Object.fromEntries(files.map((f) => [f, fs.readFileSync(f, 'utf8')]));
 
   // Every version the version file has had, so a typo'd version doesn't pass for a real one.

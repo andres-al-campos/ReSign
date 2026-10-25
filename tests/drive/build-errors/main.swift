@@ -1,4 +1,4 @@
-// Checks BuildErrorClassifier against build outputs. Run by drive/build-errors.sh.
+// Checks BuildErrorClassifier against build outputs. Run by tests/drive/build-errors.sh.
 import Foundation
 
 var failures = 0

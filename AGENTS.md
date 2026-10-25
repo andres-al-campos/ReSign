@@ -2,7 +2,7 @@
 
 Keep your sideloaded iOS apps from expiring, without having to remember them.
 
-Features are mapped in `features/`; read the map before adding one.
+Features are mapped in `dev/features/`; read the map before adding one.
 
 ## Principles
 

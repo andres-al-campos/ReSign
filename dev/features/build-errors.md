@@ -1,6 +1,6 @@
 # Build failure messages
 
-Updated 2026-10-21 15:55, at 1.5.
+Updated 2026-10-25 11:38, at 1.6.
 
 When a rebuild fails, ReSign's message says what went wrong and how to fix it,
 and labels the failure Build or Install.
@@ -23,7 +23,7 @@ The message shows on the project row and in the notification.
 ## Driving it
 
 `./build.sh drive build-errors` compiles the classifier alone and runs it on
-saved outputs in `drive/build-errors/fixtures/`. It observes the message and
+saved outputs in `tests/drive/build-errors/fixtures/`. It observes the message and
 phase for each.
 
 ## Gotchas

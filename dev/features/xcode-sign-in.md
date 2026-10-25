@@ -1,6 +1,6 @@
 # Rebuild after Xcode sign-in
 
-Updated 2026-10-10 22:20, at 1.5.
+Updated 2026-10-25 11:38, at 1.6.
 
 When Xcode has signed you out, ReSign skips the builds that would fail, tells
 you once, and rebuilds them on its own after you sign back in.
