@@ -15,9 +15,11 @@
 //   "<time>, <version>. ". Text that already exists word for word somewhere in HEAD keeps its
 //   time, so a Call moved between files keeps when it was made. A trailing "Applies *Name*." is
 //   ignored when comparing, so citing a principle doesn't restamp.
-// - A Call's "Applies *Name*." has to name a Principle in AGENTS.md, or the commit stops. The
-//   laws check this line by line too, but only here is a citation wrapped across two lines read
-//   whole.
+// - A Call's "Applies *Name*." has to name a Principle, or the commit stops: one in the project's
+//   AGENTS.md or in the AGENTS.md of a folder above it (walled_garden/AGENTS.md for its apps).
+//   Principles cascade: a shared one holds in each project below it unless that project's
+//   AGENTS.md refines it or names an exception. The laws check this line by line too, but only
+//   here is a citation wrapped across two lines read whole.
 //
 // --check is what each project's doc-stamps law runs, to catch a commit made with the hook off:
 // every doc is stamped, every Principle and Call starts with a time and version, each time is
@@ -97,16 +99,35 @@ function description(text) {
   }).join('\n').replace(/\s+/g, ' ').trim();
 }
 
-// Every "Applies *Name*." that names no Principle in AGENTS.md, as "file:line cites ...".
+const principleNames = (text) => entries(text).filter((e) => e.section === 'Principles')
+  .map((e) => e.body.match(/^\*\*(.+?)\.\*\*/)?.[1]).filter(Boolean);
+
+// The Principles shared from above: every AGENTS.md in the folders above the project, nearest
+// first, as [file, names]. A worktree sits inside its project's main checkout, so the walk
+// starts above that checkout, not above the worktree. A file that is the project's own
+// AGENTS.md (walled_garden/AGENTS.md links to _template's) is skipped.
+function sharedPrinciples() {
+  const common = tryGit('rev-parse', '--path-format=absolute', '--git-common-dir')?.trim();
+  const root = common && path.basename(common) === '.git' ? path.dirname(common) : process.cwd();
+  const own = fs.existsSync('AGENTS.md') ? fs.realpathSync('AGENTS.md') : null;
+  const found = [];
+  for (let dir = path.dirname(root); ; dir = path.dirname(dir)) {
+    const file = path.join(dir, 'AGENTS.md');
+    if (fs.existsSync(file) && fs.realpathSync(file) !== own) found.push([file, principleNames(fs.readFileSync(file, 'utf8'))]);
+    if (path.dirname(dir) === dir) return found;
+  }
+}
+
+// Every "Applies *Name*." that names no Principle in AGENTS.md or above, as "file:line cites ...".
 // docs maps each file to its text.
 function badCitations(docs) {
   const all = Object.entries(docs).flatMap(([f, text]) => entries(text).map((e) => ({ ...e, file: f })));
-  const principles = new Set(all.filter((e) => e.file === 'AGENTS.md' && e.section === 'Principles')
-    .map((e) => e.body.match(/^\*\*(.+?)\.\*\*/)?.[1]).filter(Boolean));
-  const named = [...principles].join('; ') || 'none named yet';
+  const levels = [['AGENTS.md', principleNames(docs['AGENTS.md'] ?? '')], ...sharedPrinciples()];
+  const principles = new Set(levels.flatMap(([, names]) => names));
+  const named = levels.filter(([, names]) => names.length).map(([f, names]) => `${f}: ${names.join('; ')}`).join(' | ') || 'none named yet';
   return all.flatMap((e) => [...e.text.matchAll(/Applies \*(.+?)\*\./g)]
     .filter(([, name]) => !principles.has(name))
-    .map(([, name]) => `${e.file}:${e.start + 1} cites "${name}", which isn't a Principle in AGENTS.md (${named}). Cite one of those, or none.`));
+    .map(([, name]) => `${e.file}:${e.start + 1} cites "${name}", which isn't a Principle in AGENTS.md or any folder above it (${named}). Cite one of those, or none.`));
 }
 
 if (checking) {
