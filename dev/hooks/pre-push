@@ -1,10 +1,32 @@
 #!/bin/sh
 # Runs ./build.sh check before a push: types, tests and laws, no window or simulator.
 # A push is the one place every change passes through, so the suite runs about once a
-# feature instead of once a change. Written by codecraft's stamp-hook/sync.sh.
+# feature instead of once a change. A push that changes only docs (*.md, docs/) and the
+# synced hooks (dev/hooks/) runs just the doc-stamps check: the suite tests code, and a
+# docs push waiting minutes on it was friction for nothing. Written by codecraft's
+# stamp-hook/sync.sh.
 # Skip once with: git push --no-verify
 cd "$(git rev-parse --show-toplevel)" || exit 1
 [ -x build.sh ] || exit 0
+
+# What the push carries, from the refs git passes on stdin. A remote commit we don't have
+# reads as "?", which counts as code, so an unknown range runs the suite.
+zero=0000000000000000000000000000000000000000
+changed=$(while read -r _ local _ remote; do
+  [ "$local" = $zero ] && continue
+  if [ "$remote" = $zero ]; then git log --format= --name-only "$local" --not --remotes 2>/dev/null || echo "?"
+  else git diff --name-only "$remote" "$local" 2>/dev/null || echo "?"; fi
+done)
+code=$(printf '%s\n' "$changed" | grep -v -e '^$' -e '\.md$' -e '^docs/' -e '^dev/hooks/' | head -1)
+
+if [ -z "$code" ] && command -v node >/dev/null; then
+  version=$(sed -nE 's/^exec node .*stamp-docs\.mjs" (.+)$/\1/p' "$(dirname "$0")/pre-commit" | tail -1)
+  echo "pre-push: only docs and hooks changed, so only the doc-stamps check runs …"
+  node "$(dirname "$0")/stamp-docs.mjs" --check "$version" && exit 0
+  echo "pre-push: the doc-stamps check failed, so nothing was pushed. Fix what it names above, then push again." >&2
+  exit 1
+fi
+
 echo "pre-push: running ./build.sh check (skip once with git push --no-verify) …"
 ./build.sh check </dev/null && exit 0
 echo "pre-push: ./build.sh check failed, so nothing was pushed. Fix what it names above, then push again." >&2
