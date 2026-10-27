@@ -1,0 +1,11 @@
+#!/bin/sh
+# Runs ./build.sh check before a push: types, tests and laws, no window or simulator.
+# A push is the one place every change passes through, so the suite runs about once a
+# feature instead of once a change. Written by codecraft's stamp-hook/sync.sh.
+# Skip once with: git push --no-verify
+cd "$(git rev-parse --show-toplevel)" || exit 1
+[ -x build.sh ] || exit 0
+echo "pre-push: running ./build.sh check (skip once with git push --no-verify) …"
+./build.sh check </dev/null && exit 0
+echo "pre-push: ./build.sh check failed, so nothing was pushed. Fix what it names above, then push again." >&2
+exit 1
