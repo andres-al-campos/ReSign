@@ -8,9 +8,9 @@ Features are mapped in `dev/features/`; read the map before adding one.
 
 How ReSign ought to be, so a session can decide a case nobody has met yet.
 Rulings on one thing go in that feature's file, under Calls, and name the
-principle they apply. The walled_garden `AGENTS.md` principles hold here too
-(motion spends attention; a menu bar popup opens at its final size; never a
-fight with the controls).
+principle they apply. The Principles in the `AGENTS.md` files above
+this one (walled_garden's and `~/Projects/Code`'s) hold here too, unless this
+file refines one or names an exception.
 
 - 2026-10-22 22:08, 1.6. **Unseen until it can't do its job.** ReSign works without being watched.
   It asks for attention only when something stops it keeping an app
