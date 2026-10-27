@@ -1,6 +1,6 @@
 # ReSign features
 
-Updated 2026-10-25 11:38, at 1.6.
+Updated 2026-10-26 20:33, at 1.6.
 
 What a user can do with ReSign, how to reach it, and how to drive it. Read
 this before adding anything: if it's already here, extend it instead of
@@ -38,7 +38,7 @@ feature touched for the first time gets a file and a row here.
 ## Driving conventions
 
 `./build.sh check` runs every law in `tests/`, including the one that keeps
-this map and its files in step, then every drive.
+this map and its files in step. `./build.sh check --drives` then runs every drive.
 
 A feature's check is `tests/drive/<name>.sh`. `./build.sh drive` runs them all and
 `./build.sh drive <name>` runs one; a name with no script is an error. There

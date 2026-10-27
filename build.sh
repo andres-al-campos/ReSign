@@ -4,7 +4,8 @@
 # Usage:
 #   ./build.sh                 # Release build, install to /Applications, relaunch (default)
 #   ./build.sh --fast          # fast: Debug build, run from ./build (quick iteration)
-#   ./build.sh check           # run the laws in tests/ and every drive (no build)
+#   ./build.sh check           # run the laws in tests/ (no build)
+#   ./build.sh check --drives  # the laws, then every drive in tests/drive/
 #   ./build.sh drive [name]    # run every feature check in tests/drive/, or one
 #   ./build.sh -v              # verbose xcodebuild output
 #   ./build.sh -h              # show this help
@@ -17,6 +18,7 @@ git -C "$(dirname "$0")" rev-parse --git-dir >/dev/null 2>&1 && git -C "$(dirnam
 APP_NAME=ReSign
 MODE=install   # install | fast | noinstall | check | drive
 DRIVE_NAME=""
+DRIVES=0   # check runs the drives only with --drives
 VERBOSE=0
 # Self-built apps live separately from App Store / internet downloads.
 INSTALL_DIR="/Applications/_vibe_coded"
@@ -33,6 +35,7 @@ for arg in "$@"; do
         -n|--no-install)     MODE=noinstall ;;
         check)               MODE=check ;;
         drive)               MODE=drive ;;
+        --drives)            DRIVES=1 ;;
         -v|--verbose)        VERBOSE=1 ;;
         -h|--help)
             cat <<'EOF'
@@ -42,7 +45,8 @@ Usage:
   ./build.sh                 Release build, install to /Applications, relaunch (default)
   ./build.sh --fast          fast: Debug build, run from ./build (quick iteration)
   ./build.sh --no-install    Release build, stage into ./build, no install/launch (for release.sh)
-  ./build.sh check           run the laws in tests/ and every drive (no build)
+  ./build.sh check           run the laws in tests/ (no build)
+  ./build.sh check --drives  the laws, then every drive in tests/drive/
   ./build.sh drive [name]    run every feature check in tests/drive/, or one
   ./build.sh -v              verbose xcodebuild output
   ./build.sh -h              show this help
@@ -92,7 +96,11 @@ if [ "$MODE" = "check" ]; then
     for law in tests/*.sh; do
         "$law" || failed=1
     done
-    drive "" || failed=1
+    if [ "$DRIVES" = 1 ]; then
+        drive "" || failed=1
+    else
+        echo "The drives didn't run: ./build.sh check --drives runs them."
+    fi
     exit $failed
 fi
 
