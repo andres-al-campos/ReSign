@@ -4,7 +4,7 @@
 # feature instead of once a change. A push that changes only docs (*.md, docs/) and the
 # synced hooks (dev/hooks/) runs just the doc-stamps check: the suite tests code, and a
 # docs push waiting minutes on it was friction for nothing. Written by codecraft's
-# stamp-hook/sync.sh.
+# git-hooks/sync.sh.
 # Skip once with: git push --no-verify
 cd "$(git rev-parse --show-toplevel)" || exit 1
 [ -x build.sh ] || exit 0

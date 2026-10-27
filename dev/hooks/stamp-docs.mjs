@@ -28,8 +28,8 @@
 //
 // The stamp is a clue to how far to trust a doc, not a claim that anyone reread it.
 //
-// GENERATED: the canonical copy is codecraft's stamp-hook/stamp-docs.mjs, and
-// stamp-hook/sync.sh copies it into each project. Fix it there, not here.
+// GENERATED: the canonical copy is codecraft's git-hooks/stamp-docs.mjs, and
+// git-hooks/sync.sh copies it into each project. Fix it there, not here.
 
 import fs from 'node:fs';
 import path from 'node:path';
