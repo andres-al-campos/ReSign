@@ -11,8 +11,8 @@
 //   only to its Calls leaves the stamp alone: adding a ruling doesn't mean anyone read the
 //   description again. Only the decision aids are stamped, the feature files and the
 //   Principles: they're what a session decides by. Other docs (the README, docs/) aren't.
-// - Each Principle (AGENTS.md) and Call (a ## Calls section) that is new or reworded starts
-//   "<time>, <version>. ". Text that already exists word for word somewhere in HEAD keeps its
+// - Each Principle (in any AGENTS.md in the repo, like codecraft's shared/AGENTS.md) and Call
+//   (a ## Calls section) that is new or reworded starts "<time>, <version>. ". Text that already exists word for word somewhere in HEAD keeps its
 //   time, so a Call moved between files keeps when it was made. A trailing "Applies *Name*." is
 //   ignored when comparing, so citing a principle doesn't restamp.
 // - A Call's "Applies *Name*." has to name a Principle, or the commit stops: one in the project's
@@ -69,7 +69,7 @@ const STAMP = /^(?:Checked|Updated) .+, at \S+\.$/;
 // Also the old date-only prefix ("2026-10-13. "), so converting one isn't read as a new entry.
 const PREFIX = /^\d{4}-\d\d-\d\d(?: \d\d:\d\d, \S+?)?\. /;
 const describes = (f) => /^(dev\/)?features\/[^/]+\.md$/.test(f);
-const hasEntries = (f) => f === 'AGENTS.md' || describes(f);
+const hasEntries = (f) => /(^|\/)AGENTS\.md$/.test(f) || describes(f);
 
 // The Principles and Calls in a text: { start, end, section, text, body } per entry. text is
 // the entry's lines joined; body leaves out its time and cited principle.
@@ -132,7 +132,8 @@ function badCitations(docs) {
 
 if (checking) {
   const md = (dir) => fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => `${dir}/${f}`) : [];
-  const files = ['AGENTS.md', ...md('dev/features'), ...md('features')].filter((f) => fs.existsSync(f));
+  const nested = (tryGit('ls-files', '*/AGENTS.md') ?? '').split('\n').filter(Boolean);
+  const files = ['AGENTS.md', ...nested, ...md('dev/features'), ...md('features')].filter((f) => fs.existsSync(f));
   const docs = Object.fromEntries(files.map((f) => [f, fs.readFileSync(f, 'utf8')]));
 
   // Every version the version file has had, so a typo'd version doesn't pass for a real one.
