@@ -172,11 +172,16 @@ if (checking) {
   process.exit(0);
 }
 
-// A first commit has no HEAD, so nothing is known yet.
-const headDocs = (tryGit('ls-tree', '-r', '--name-only', 'HEAD') ?? '').split('\n').filter(hasEntries);
-const known = new Set(headDocs.flatMap((f) => entries(tryGit('show', `HEAD:${f}`) ?? '').map((e) => e.body)));
+// The commit's parents: HEAD, and MERGE_HEAD during a merge, so a merge keeps the stamps the
+// other branch already set instead of reading its entries as new. A first commit has no HEAD,
+// so nothing is known yet.
+const parents = ['HEAD', ...(tryGit('rev-parse', '-q', '--verify', 'MERGE_HEAD') ? ['MERGE_HEAD'] : [])];
+const known = new Set(parents.flatMap((rev) => (tryGit('ls-tree', '-r', '--name-only', rev) ?? '').split('\n')
+  .filter(hasEntries).flatMap((f) => entries(tryGit('show', `${rev}:${f}`) ?? '').map((e) => e.body))));
 
-function stamp(file, before, after) {
+// befores holds the file in each parent, null where it doesn't exist. The description is new
+// only if no parent had it.
+function stamp(file, befores, after) {
   const lines = after.split('\n');
   if (hasEntries(file)) {
     for (const e of entries(after)) {
@@ -185,7 +190,7 @@ function stamp(file, before, after) {
     }
   }
   const at = lines.findIndex((l) => STAMP.test(l));
-  if (describes(file) && (at < 0 || before === null || description(before) !== description(after))) {
+  if (describes(file) && (at < 0 || !befores.some((b) => b !== null && description(b) === description(after)))) {
     const line = `Updated ${now}, at ${version}.`;
     if (at >= 0) lines[at] = line;
     else {
@@ -199,15 +204,15 @@ function stamp(file, before, after) {
 const staged = git('diff', '--cached', '--name-only', '--diff-filter=ACMR').split('\n')
   .filter((f) => describes(f) || hasEntries(f));
 for (const file of staged) {
-  const before = tryGit('show', `HEAD:${file}`);
+  const befores = parents.map((rev) => tryGit('show', `${rev}:${file}`));
   const index = git('show', `:${file}`);
-  const stampedIndex = stamp(file, before, index);
+  const stampedIndex = stamp(file, befores, index);
   if (stampedIndex === index) continue;
   // Restamp the staged text and the working file separately, so unstaged edits stay unstaged.
   const blob = execFileSync('git', ['hash-object', '-w', '--stdin'], { input: stampedIndex, encoding: 'utf8' }).trim();
   git('update-index', '--cacheinfo', `100644,${blob},${file}`);
   const work = fs.readFileSync(file, 'utf8');
-  fs.writeFileSync(file, work === index ? stampedIndex : stamp(file, before, work));
+  fs.writeFileSync(file, work === index ? stampedIndex : stamp(file, befores, work));
   console.log(`stamped ${file}`);
 }
 
