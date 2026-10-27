@@ -15,3 +15,7 @@ DerivedData/
 
 # Local signing config (your Apple Team ID) — copy from Config.xcconfig.example
 Config.xcconfig
+
+# Process, not product: mockups and per-quest plans stay on disk, off the remote
+designs/
+plans/
