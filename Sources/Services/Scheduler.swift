@@ -226,7 +226,7 @@ final class Scheduler {
         let signingState = SigningStatus.current()
         lastKnownSigningState = signingState
         if case .signedOut = signingState {
-            store.setGlobalProblem(.signedOut, active: true)
+            store.setSignedOut(true, needsAttention: true)
             pendingRetry.insert(id)
             store.markBuildFailed(
                 id: id,
@@ -293,7 +293,7 @@ final class Scheduler {
                         // sign-in poll rebuilds it once the account is back.
                         self.pendingRetry.insert(projectID)
                         self.lastKnownSigningState = .signedOut
-                        store.setGlobalProblem(.signedOut, active: true)
+                        store.setSignedOut(true, needsAttention: true)
                         // Back to 2s if the close watch is still open.
                         self.scheduleSignInPoll()
                         if self.signedOutAlert.shouldNotify() {
@@ -401,15 +401,15 @@ final class Scheduler {
         if case .signedOut = current {
             // An ignored project doesn't count: it must not keep the icon red.
             let watched = store?.projects.filter { !$0.isHidden } ?? []
-            let shows = SignedOutAlert.showsProblem(
+            let needsAttention = SignedOutAlert.needsAttention(
                 signedOut: true,
                 waitingBuilds: watched.filter { pendingRetry.contains($0.id) }.count,
                 nextDue: watched.compactMap(\.nextDueAt).min()
             )
-            store?.setGlobalProblem(.signedOut, active: shows)
-            if shows, signedOutAlert.shouldNotify() { notifications?.sendSignedOutNotification() }
+            store?.setSignedOut(true, needsAttention: needsAttention)
+            if needsAttention, signedOutAlert.shouldNotify() { notifications?.sendSignedOutNotification() }
         }
-        if isSignedIn { store?.setGlobalProblem(.signedOut, active: false) }
+        if isSignedIn { store?.setSignedOut(false, needsAttention: false) }
 
         guard wasSignedOut, isSignedIn else { return }
 

@@ -68,8 +68,10 @@ struct SignedOutAlert {
 
     private var notified = false
 
-    /// The banner and red icon wait for a blocked build, or one due within the window.
-    static func showsProblem(signedOut: Bool, waitingBuilds: Int, nextDue: Date?, now: Date = .now) -> Bool {
+    /// The red icon and notification wait for a blocked build, or one due within
+    /// the window. The banner doesn't: it's only seen on opening the popup, which
+    /// is when someone about to press Rebuild wants to know.
+    static func needsAttention(signedOut: Bool, waitingBuilds: Int, nextDue: Date?, now: Date = .now) -> Bool {
         guard signedOut else { return false }
         if waitingBuilds > 0 { return true }
         guard let nextDue else { return false }

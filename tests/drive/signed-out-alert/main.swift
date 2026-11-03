@@ -7,16 +7,16 @@ func expect(_ name: String, _ ok: Bool) {
 }
 
 let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
-func shows(signedOut: Bool = true, waiting: Int = 0, dueInHours: Double?) -> Bool {
-    SignedOutAlert.showsProblem(signedOut: signedOut, waitingBuilds: waiting,
-                                nextDue: dueInHours.map { now.addingTimeInterval($0 * 3600) }, now: now)
+func attention(signedOut: Bool = true, waiting: Int = 0, dueInHours: Double?) -> Bool {
+    SignedOutAlert.needsAttention(signedOut: signedOut, waitingBuilds: waiting,
+                                  nextDue: dueInHours.map { now.addingTimeInterval($0 * 3600) }, now: now)
 }
 
-expect("signed out with the next build days away shows nothing", !shows(dueInHours: 72))
-expect("signed out with nothing scheduled shows nothing", !shows(dueInHours: nil))
-expect("signed out with a build due within a day shows the problem", shows(dueInHours: 20))
-expect("signed out with a build waiting shows the problem", shows(waiting: 1, dueInHours: 72))
-expect("signed in shows nothing, even close to a build", !shows(signedOut: false, waiting: 1, dueInHours: 1))
+expect("signed out with the next build days away needs no attention", !attention(dueInHours: 72))
+expect("signed out with nothing scheduled needs no attention", !attention(dueInHours: nil))
+expect("signed out with a build due within a day needs attention", attention(dueInHours: 20))
+expect("signed out with a build waiting needs attention", attention(waiting: 1, dueInHours: 72))
+expect("signed in needs no attention, even close to a build", !attention(signedOut: false, waiting: 1, dueInHours: 1))
 
 var alert = SignedOutAlert()
 expect("the first warning notifies", alert.shouldNotify())

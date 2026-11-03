@@ -8,6 +8,8 @@ final class ProjectStore {
     /// Problems that block every project, shown in the popup's banner. Not
     /// saved: each is re-detected at launch.
     private(set) var globalProblems: [GlobalProblem] = []
+    /// Whether the signed-out banner should also turn the menu bar icon red.
+    private(set) var signedOutNeedsAttention = false
 
     private var storeURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -150,6 +152,11 @@ final class ProjectStore {
         case (false, nil): break
         }
         return false
+    }
+
+    func setSignedOut(_ signedOut: Bool, needsAttention: Bool) {
+        setGlobalProblem(.signedOut, active: signedOut)
+        signedOutNeedsAttention = signedOut && needsAttention
     }
 
     // MARK: - Private

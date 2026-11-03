@@ -1,16 +1,16 @@
 # Rebuild after Xcode sign-in
 
-Updated 2026-11-02 22:22, at 1.6.
+Updated 2026-11-02 23:09, at 1.6.
 
-When Xcode has signed you out, ReSign says nothing until a build is within a
-day. Then it tells you once, skips the builds that would fail, and rebuilds them
-on its own after you sign back in. Every sign-out is recorded with what ran
-around it.
+When Xcode has signed you out, the popup says so, and the menu bar icon stays
+as it was until a build is within a day. Then ReSign tells you once, skips the
+builds that would fail, and rebuilds them on its own after you sign back in.
+Every sign-out is recorded with what ran around it.
 
 ## Sub-features
 
-- While no build is waiting and none is due within 24 hours, a sign-out changes
-  nothing: no notification, no banner, no red icon.
+- While no build is waiting and none is due within 24 hours, a sign-out shows
+  only as the banner in the popup: no notification, no red icon.
 - Each change to Xcode's account is appended to
   `~/Library/Application Support/ReSign/sign-ins.log`: signed out, signed in, or
   replaced by a new ID, with the build tools running then, and the `xcodebuild`
@@ -67,7 +67,7 @@ used a 10-minute watch window, since shortened to 5.
 - A project comes due a minute after its profile expires, which is why the
   warning runs ahead of the build instead of waiting for it.
 - The notification doesn't repeat for a later sign-out until a build has got
-  past signing, but the banner and red icon do come back while a build is close.
+  past signing, but the red icon does come back while a build is close.
 - The record sees the account list once a minute, so a run that's already
   finished shows only in the system-log part, without its command line.
 - Xcode's account list can name an account whose credentials are gone
@@ -80,9 +80,11 @@ used a 10-minute watch window, since shortened to 5.
 
 ## Calls
 
-- 2026-11-02 22:22, 1.6. **A sign-out matters only when a build is close.** Xcode was signing out
-  daily while profiles last days, and the red icon and banner warned about each
-  one though nothing was stopped yet: "I'd like to find a balance so I'm not
-  getting bombarded." Waiting for the build itself would be too late, since the
-  app has expired by then, so they start a day ahead. The 24 hours is a guess.
+- 2026-11-02 23:09, 1.6. **A sign-out matters only when a build is close.** Xcode was signing out
+  daily while profiles last days, and the red icon warned about each one though
+  nothing was stopped yet: "I'd like to find a balance so I'm not getting
+  bombarded." Waiting for the build itself would be too late, since the app has
+  expired by then, so the icon goes red a day ahead. The 24 hours is a guess.
+  The banner shows whenever Xcode is signed out: the popup only gets opened
+  when the icon is red or to make a build, and then it's useful to know.
   Applies *Unseen until it can't do its job*.

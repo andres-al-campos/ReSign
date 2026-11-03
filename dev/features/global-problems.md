@@ -1,6 +1,6 @@
 # Problems that block every project
 
-Updated 2026-11-02 22:22, at 1.6.
+Updated 2026-11-02 23:09, at 1.6.
 
 When something stops every project from installing, ReSign says so once, in a
 banner at the top of the popup, and turns the menu bar icon red. The banner
@@ -17,20 +17,20 @@ stays until the cause is fixed; it has no close button.
   its button opens Software Update instead.
 - **Signed out of Xcode.** The banner has an Open Xcode accounts button, which
   opens Settings → Accounts and starts the close sign-in watch (see
-  [xcode-sign-in.md](xcode-sign-in.md)). It shows only while a build is waiting
-  on the sign-in or due within a day.
+  [xcode-sign-in.md](xcode-sign-in.md)). It shows whenever Xcode is signed out,
+  whether or not a build is waiting.
 - **Xcode license not accepted.** After a macOS or Xcode update, xcodebuild
   won't run until the new license is accepted. The banner's Open Xcode button
   opens Xcode, which asks for it.
 - Several can show at once, one banner each.
 - The menu bar icon is red while any banner shows, whatever the projects'
-  state.
+  state. The signed-out banner is the exception: it turns the icon red only
+  while a build is waiting on the sign-in or due within a day.
 
 ## How to get to it
 
 Open the popup while the phone runs a newer major iOS than Xcode's iOS SDK
-(for example iOS 27 with Xcode 26), or while Xcode is signed out with a build
-due within a day.
+(for example iOS 27 with Xcode 26), or while Xcode is signed out.
 
 ## Driving it
 
