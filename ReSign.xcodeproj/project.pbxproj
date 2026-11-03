@@ -27,6 +27,8 @@
 		RS0025 /* StatusIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0026 /* StatusIconView.swift */; };
 		RS0027 /* DateHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0028 /* DateHelpers.swift */; };
 		RS0029 /* BuildLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0030 /* BuildLogStore.swift */; };
+		RS9009 /* SignInRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9010 /* SignInRecord.swift */; };
+		RS9011 /* SignInRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS9012 /* SignInRecorder.swift */; };
 		RS0031 /* SigningStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0032 /* SigningStatus.swift */; };
 		RS0033 /* BuildOutputFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0034 /* BuildOutputFilter.swift */; };
 		RS0035 /* LoginItemManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = RS0036 /* LoginItemManager.swift */; };
@@ -53,6 +55,8 @@
 		RS0026 /* StatusIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusIconView.swift; sourceTree = "<group>"; };
 		RS0028 /* DateHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateHelpers.swift; sourceTree = "<group>"; };
 		RS0030 /* BuildLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildLogStore.swift; sourceTree = "<group>"; };
+		RS9010 /* SignInRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInRecord.swift; sourceTree = "<group>"; };
+		RS9012 /* SignInRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInRecorder.swift; sourceTree = "<group>"; };
 		RS0032 /* SigningStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningStatus.swift; sourceTree = "<group>"; };
 		RS0034 /* BuildOutputFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildOutputFilter.swift; sourceTree = "<group>"; };
 		RS0036 /* LoginItemManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManager.swift; sourceTree = "<group>"; };
@@ -127,6 +131,8 @@
 				RS0018 /* Scheduler.swift */,
 				RS0020 /* NotificationManager.swift */,
 				RS0030 /* BuildLogStore.swift */,
+				RS9010 /* SignInRecord.swift */,
+				RS9012 /* SignInRecorder.swift */,
 				RS0032 /* SigningStatus.swift */,
 				RS0034 /* BuildOutputFilter.swift */,
 				RS0036 /* LoginItemManager.swift */,
@@ -250,6 +256,8 @@
 				RS0025 /* StatusIconView.swift in Sources */,
 				RS0027 /* DateHelpers.swift in Sources */,
 				RS0029 /* BuildLogStore.swift in Sources */,
+				RS9009 /* SignInRecord.swift in Sources */,
+				RS9011 /* SignInRecorder.swift in Sources */,
 				RS0031 /* SigningStatus.swift in Sources */,
 				RS0033 /* BuildOutputFilter.swift in Sources */,
 				RS0035 /* LoginItemManager.swift in Sources */,

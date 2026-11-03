@@ -59,19 +59,26 @@ enum GlobalProblem: Equatable, Identifiable {
 }
 
 /// When being signed out of Xcode is worth saying. Xcode can sign out several
-/// times between builds and a profile lasts days, so the sign-out itself stops
-/// nothing: only a build that needs the account does.
+/// times between builds and a profile lasts days, so most sign-outs stop
+/// nothing. Waiting for the build itself would be too late: a project comes due
+/// after its profile expires, when the app has already stopped launching.
 struct SignedOutAlert {
+    /// Long enough to get to the Mac before an app stops launching.
+    static let warningWindow: TimeInterval = 24 * 3600
+
     private var notified = false
 
-    /// The banner and red icon wait for a build that's actually blocked.
-    static func showsProblem(signedOut: Bool, waitingBuilds: Int) -> Bool {
-        signedOut && waitingBuilds > 0
+    /// The banner and red icon wait for a blocked build, or one due within the window.
+    static func showsProblem(signedOut: Bool, waitingBuilds: Int, nextDue: Date?, now: Date = .now) -> Bool {
+        guard signedOut else { return false }
+        if waitingBuilds > 0 { return true }
+        guard let nextDue else { return false }
+        return nextDue.timeIntervalSince(now) <= warningWindow
     }
 
-    /// A build was refused. True the first time only, so retries on wake and
-    /// on the 2-hour pass don't notify again.
-    mutating func shouldNotifyForBlockedBuild() -> Bool {
+    /// True the first time only, so later sign-outs in the window and retries
+    /// on wake and on the 2-hour pass don't notify again.
+    mutating func shouldNotify() -> Bool {
         defer { notified = true }
         return !notified
     }

@@ -233,7 +233,7 @@ final class Scheduler {
                 error: "\(GlobalProblem.signedOut.title). \(GlobalProblem.signedOut.detail)"
             )
             // Only one notification, no matter how many projects are due.
-            if signedOutAlert.shouldNotifyForBlockedBuild() { notifications.sendSignedOutNotification() }
+            if signedOutAlert.shouldNotify() { notifications.sendSignedOutNotification() }
             return
         }
 
@@ -296,7 +296,11 @@ final class Scheduler {
                         store.setGlobalProblem(.signedOut, active: true)
                         // Back to 2s if the close watch is still open.
                         self.scheduleSignInPoll()
-                        if self.signedOutAlert.shouldNotifyForBlockedBuild() { notifications.sendSignedOutNotification() }
+                        if self.signedOutAlert.shouldNotify() {
+                            notifications.sendSignedOutNotification()
+                            // The account list may still look fine, so the poll wouldn't record this.
+                            SignInRecorder.record("xcodebuild said No Accounts (\(projectName))")
+                        }
                     case .projectSigning:
                         // Fixed in this project's signing settings → "Open Project in Xcode".
                         notifications.sendProjectSigningNotification(project: project, message: message)
@@ -393,10 +397,17 @@ final class Scheduler {
             return false
         }()
         lastKnownSigningState = current
+        SignInRecorder.noticeAccounts(SigningStatus.xcodeAccountIDs())
         if case .signedOut = current {
             // An ignored project doesn't count: it must not keep the icon red.
-            let waiting = pendingRetry.filter { id in store?.projects.first { $0.id == id }?.isHidden == false }
-            store?.setGlobalProblem(.signedOut, active: SignedOutAlert.showsProblem(signedOut: true, waitingBuilds: waiting.count))
+            let watched = store?.projects.filter { !$0.isHidden } ?? []
+            let shows = SignedOutAlert.showsProblem(
+                signedOut: true,
+                waitingBuilds: watched.filter { pendingRetry.contains($0.id) }.count,
+                nextDue: watched.compactMap(\.nextDueAt).min()
+            )
+            store?.setGlobalProblem(.signedOut, active: shows)
+            if shows, signedOutAlert.shouldNotify() { notifications?.sendSignedOutNotification() }
         }
         if isSignedIn { store?.setGlobalProblem(.signedOut, active: false) }
 

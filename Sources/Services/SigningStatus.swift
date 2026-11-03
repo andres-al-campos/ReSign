@@ -54,12 +54,21 @@ enum SigningStatus {
     /// list where we expect (older or newer Xcode) — callers must not treat nil as
     /// signed out, or every build would be blocked.
     private static func xcodeAccountCount() -> Int? {
+        xcodeAccounts()?.count
+    }
+
+    /// The IDs Xcode gave its accounts. Signing back in gets a new ID, so a
+    /// change shows a sign-out even when it was undone between two looks.
+    static func xcodeAccountIDs() -> [String]? {
+        xcodeAccounts()?.compactMap { ($0 as? [String: Any])?["identifier"] as? String }
+    }
+
+    private static func xcodeAccounts() -> [Any]? {
         let domain = "com.apple.dt.Xcode" as CFString
         // Pick up Xcode's writes made since ReSign launched.
         CFPreferencesAppSynchronize(domain)
-        guard let lists = CFPreferencesCopyAppValue("DVTDeveloperAccountManagerAppleIDLists" as CFString, domain) as? [String: Any],
-              let accounts = lists["IDE.Identifiers.Prod"] as? [Any] else { return nil }
-        return accounts.count
+        guard let lists = CFPreferencesCopyAppValue("DVTDeveloperAccountManagerAppleIDLists" as CFString, domain) as? [String: Any] else { return nil }
+        return lists["IDE.Identifiers.Prod"] as? [Any]
     }
 }
 
