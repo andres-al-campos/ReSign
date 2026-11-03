@@ -21,6 +21,7 @@ final class Scheduler {
     /// as signing recovers.
     private var pendingRetry: Set<UUID> = []
     private var lastKnownSigningState: SigningStatus.State = .unknown(reason: "Not yet checked")
+    private var signedOutAlert = SignedOutAlert()
     /// After the user clicks the signed-out notification, the poll runs every
     /// 2s until this time. Being signed out doesn't open it: that can last days.
     private var signInWatchUntil: Date = .distantPast
@@ -232,7 +233,7 @@ final class Scheduler {
                 error: "\(GlobalProblem.signedOut.title). \(GlobalProblem.signedOut.detail)"
             )
             // Only one notification, no matter how many projects are due.
-            notifications.sendSignedOutNotification()
+            if signedOutAlert.shouldNotifyForBlockedBuild() { notifications.sendSignedOutNotification() }
             return
         }
 
@@ -277,6 +278,7 @@ final class Scheduler {
                     let displayLog = BuildOutputFilter.extractSuccess(from: log)
                     self.logStore?.save(log: displayLog, for: projectID, name: projectName)
                     store.markBuildSucceeded(id: projectID, profileExpiresAt: profileExpiresAt)
+                    self.signedOutAlert.accountWorked()
                     // The sign-in took; close the watch.
                     if self.pendingRetry.isEmpty { self.signInWatchUntil = .distantPast }
                     notifications.sendSuccessNotification(project: project)
@@ -294,7 +296,7 @@ final class Scheduler {
                         store.setGlobalProblem(.signedOut, active: true)
                         // Back to 2s if the close watch is still open.
                         self.scheduleSignInPoll()
-                        notifications.sendSignedOutNotification()
+                        if self.signedOutAlert.shouldNotifyForBlockedBuild() { notifications.sendSignedOutNotification() }
                     case .projectSigning:
                         // Fixed in this project's signing settings → "Open Project in Xcode".
                         notifications.sendProjectSigningNotification(project: project, message: message)
@@ -391,8 +393,11 @@ final class Scheduler {
             return false
         }()
         lastKnownSigningState = current
-        // The banner follows Xcode's account whether or not a build is waiting.
-        if case .signedOut = current { store?.setGlobalProblem(.signedOut, active: true) }
+        if case .signedOut = current {
+            // An ignored project doesn't count: it must not keep the icon red.
+            let waiting = pendingRetry.filter { id in store?.projects.first { $0.id == id }?.isHidden == false }
+            store?.setGlobalProblem(.signedOut, active: SignedOutAlert.showsProblem(signedOut: true, waitingBuilds: waiting.count))
+        }
         if isSignedIn { store?.setGlobalProblem(.signedOut, active: false) }
 
         guard wasSignedOut, isSignedIn else { return }

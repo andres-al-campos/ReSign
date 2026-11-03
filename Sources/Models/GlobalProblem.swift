@@ -57,3 +57,29 @@ enum GlobalProblem: Equatable, Identifiable {
         }
     }
 }
+
+/// When being signed out of Xcode is worth saying. Xcode can sign out several
+/// times between builds and a profile lasts days, so the sign-out itself stops
+/// nothing: only a build that needs the account does.
+struct SignedOutAlert {
+    private var notified = false
+
+    /// The banner and red icon wait for a build that's actually blocked.
+    static func showsProblem(signedOut: Bool, waitingBuilds: Int) -> Bool {
+        signedOut && waitingBuilds > 0
+    }
+
+    /// A build was refused. True the first time only, so retries on wake and
+    /// on the 2-hour pass don't notify again.
+    mutating func shouldNotifyForBlockedBuild() -> Bool {
+        defer { notified = true }
+        return !notified
+    }
+
+    /// Reset by a build getting past signing, not by the account list looking
+    /// full: the list can name an account whose credentials are gone, which
+    /// would flip between "signed in" and "No Accounts" and notify on each flip.
+    mutating func accountWorked() {
+        notified = false
+    }
+}

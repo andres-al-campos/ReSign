@@ -1,16 +1,20 @@
 # Rebuild after Xcode sign-in
 
-Updated 2026-10-25 11:38, at 1.6.
+Updated 2026-11-02 21:40, at 1.6.
 
-When Xcode has signed you out, ReSign skips the builds that would fail, tells
-you once, and rebuilds them on its own after you sign back in.
+When Xcode has signed you out, ReSign says nothing until a build needs the
+account. Then it skips the builds that would fail, tells you once, and rebuilds
+them on its own after you sign back in.
 
 ## Sub-features
 
+- While no build is waiting, a sign-out changes nothing: no notification, no
+  banner, no red icon.
 - A build that is due while Xcode is signed out fails fast with "Not signed in
   to Xcode" instead of running `xcodebuild`, and is queued.
 - One "Not signed in to Xcode" notification is shown, however many projects
-  are queued.
+  are queued and however many passes retry them. The next one needs a build to
+  have got past signing first.
 - Clicking the notification, or its Open Xcode button, opens Xcode at
   Settings → Accounts.
 - After that click, the queued builds start about 2 seconds after the account
@@ -27,10 +31,11 @@ sign back in.
 
 ## Driving it
 
-No check yet. The trigger is a real sign-in to Xcode with an Apple ID and
-two-factor, which nothing can perform headless. The decision of how often to
-look for the sign-in could be tested alone, but ReSign has no test target and
-that decision isn't separated from the scheduler's timers.
+`./build.sh drive signed-out-alert` compiles the decision of when to speak
+alone and runs it: quiet with no build waiting, one notification per spell. It
+doesn't observe the banner or icon, or a real sign-in with an Apple ID and
+two-factor, which nothing can perform headless. How often ReSign looks for the
+sign-in isn't separated from the scheduler's timers, so it isn't checked.
 
 Last driven: 2026-10-10, macOS, by hand. Signed out, clicked the notification,
 signed in; the rebuild started on its own with no noticeable wait. That run
@@ -52,3 +57,19 @@ used a 10-minute watch window, since shortened to 5.
   the same way.
 - The queue is held in memory. Quitting or reinstalling ReSign drops it, and
   only projects that are due get rebuilt at the next launch.
+- A project comes due a minute after its profile expires, so by the time a
+  sign-out is mentioned that app has already stopped launching.
+- Xcode's account list can name an account whose credentials are gone
+  (`xcodebuild` logs "Invalid credentials in keychain ... missing
+  Xcode-Username"). ReSign reads that as signed in. If `xcodebuild` then says
+  "No Accounts", the sign-in poll retries the queue every minute.
+- What signs Xcode out is unknown. Seen once in the system log, 2026-11-02, on
+  Xcode 27.1, in an `xcodebuild` not started by ReSign; signing back in gave the
+  account a new ID.
+
+## Calls
+
+- 2026-11-02 21:40, 1.6. **A sign-out doesn't matter until the next build.** Xcode was signing out
+  daily while profiles last days, and the red icon and banner warned about each
+  one though nothing was stopped yet. So they wait for a build that's blocked.
+  Applies *Unseen until it can't do its job*.

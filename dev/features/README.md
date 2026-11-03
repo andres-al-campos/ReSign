@@ -1,6 +1,6 @@
 # ReSign features
 
-Updated 2026-10-26 20:33, at 1.6.
+Updated 2026-11-02 21:40, at 1.6.
 
 What a user can do with ReSign, how to reach it, and how to drive it. Read
 this before adding anything: if it's already here, extend it instead of
@@ -13,7 +13,7 @@ This map is partial. It grows one feature at a time, as each is changed.
 | Build failure messages | [build-errors.md](build-errors.md) | macOS | Yes |
 | Problems that block every project | [global-problems.md](global-problems.md) | macOS | Partly |
 | Settings | [settings.md](settings.md) | macOS | No check yet |
-| Rebuild after Xcode sign-in | [xcode-sign-in.md](xcode-sign-in.md) | macOS | No check yet |
+| Rebuild after Xcode sign-in | [xcode-sign-in.md](xcode-sign-in.md) | macOS | Partly |
 
 ## What counts as a feature
 
