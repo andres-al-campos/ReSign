@@ -202,7 +202,7 @@ else
     OUT_DIR="build"
     mkdir -p "$OUT_DIR"
     rm -rf "$OUT_DIR/$APP_NAME.app"
-    cp -R "$APP_PATH" "$OUT_DIR/"
+    mv "$APP_PATH" "$OUT_DIR/"
     echo "✓ Staged: $OUT_DIR/$APP_NAME.app"
 
     # no-install: stop here with the artifact staged (used by release.sh).
@@ -241,7 +241,9 @@ else
     echo "→ Installing to $INSTALL_DIR/$APP_NAME.app"
     mkdir -p "$INSTALL_DIR"
     rm -rf "$INSTALL_DIR/$APP_NAME.app"
-    cp -R "$OUT_DIR/$APP_NAME.app" "$INSTALL_DIR/"
+    # Moved, not copied: a second copy shows up in Spotlight, and Launch Services can
+    # bind the app to it.
+    mv "$OUT_DIR/$APP_NAME.app" "$INSTALL_DIR/"
 
     echo "→ Launching..."
     open "$INSTALL_DIR/$APP_NAME.app"
