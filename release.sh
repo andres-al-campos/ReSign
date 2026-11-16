@@ -7,6 +7,7 @@
 #
 # Usage:
 #   ./release.sh          # build, tag, and publish the release
+#   ./release.sh --dry-run  # build and package the DMG, publish nothing
 #   ./release.sh -h       # this help
 #
 # Safety: refuses to run on a dirty or unpushed tree, and won't overwrite an
@@ -19,9 +20,10 @@ APP_NAME=ReSign
 
 case "${1:-}" in
     -h|--help)
-        sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+        sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
         exit 0
         ;;
+    --dry-run) DRY_RUN=1 ;;
     "") ;;
     *)
         echo "error: unknown flag '$1'. Run '$0 --help' for usage."
@@ -32,6 +34,7 @@ esac
 cd "$(dirname "$0")"
 
 # --- Preflight: tooling ---
+if [ -z "${DRY_RUN:-}" ]; then
 if ! command -v gh >/dev/null 2>&1; then
     echo "error: GitHub CLI (gh) not installed. Install with: brew install gh, then run 'gh auth login'."
     exit 1
@@ -39,6 +42,8 @@ fi
 if ! gh auth status >/dev/null 2>&1; then
     echo "error: not signed in to GitHub CLI. Run 'gh auth login' (GitHub.com → HTTPS → browser), then re-run ./release.sh."
     exit 1
+fi
+
 fi
 
 # --- Read the version (single source of truth) ---
@@ -50,6 +55,9 @@ if [ -z "$VERSION" ]; then
 fi
 TAG="v$VERSION"
 
+# A dry run builds the DMG from whatever is checked out, so it skips the checks
+# that keep a published tag honest.
+if [ -z "${DRY_RUN:-}" ]; then
 # --- Safety: clean, pushed tree ---
 if [ -n "$(git status --porcelain)" ]; then
     echo "error: working tree has uncommitted changes. Commit or stash them so the release tag matches what's published, then re-run ./release.sh."
@@ -67,6 +75,8 @@ fi
 if git rev-parse "$TAG" >/dev/null 2>&1 || gh release view "$TAG" >/dev/null 2>&1; then
     echo "error: $TAG already exists. Bump MARKETING_VERSION in ReSign.xcodeproj/project.pbxproj, commit, and push before releasing a new version."
     exit 1
+fi
+
 fi
 
 # --- Build fresh (Release, staged into ./build, no install) ---
@@ -89,6 +99,11 @@ ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
 echo "→ Packaging $DMG"
 hdiutil create -quiet -volname "$APP_NAME" -srcfolder "$STAGE" -format UDZO "$DMG"
+
+if [ -n "${DRY_RUN:-}" ]; then
+    echo "✓ Dry run: built $DMG. Nothing was tagged or published."
+    exit 0
+fi
 
 # --- Tag and publish ---
 echo "→ Tagging $TAG and creating GitHub release"
