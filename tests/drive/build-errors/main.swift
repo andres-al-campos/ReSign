@@ -40,6 +40,17 @@ expect("the 12040 message says what to do when the App Store has no update",
 expect("an unaccepted Xcode license says how to accept it",
        BuildErrorClassifier.classify("You have not agreed to the Xcode license agreements. Please run 'sudo xcodebuild -license' from within a Terminal window to review and agree to the Xcode and Apple SDKs license.").message,
        contains: "Open Xcode and agree")
+// Timekeep's build.sh on 2026-11-16: devicectl's generic 3002 on every attempt.
+let install3002 = BuildErrorClassifier.classify(fixture("timekeep-install-3002.txt")).message
+expect("a script's error, not devicectl's bare 3002 line, is surfaced",
+       install3002, contains: "couldn't install to the iPhone")
+expect("…with the fix from its indented lines", install3002, contains: "Unlock it and keep it awake")
+expect("a compiler error leaves out the source lines under it",
+       BuildErrorClassifier.classify("/a/B.swift:3:5: error: cannot find 'x' in scope\n    let y = x\n            ^").message,
+       contains: "in scope")
+if BuildErrorClassifier.classify("/a/B.swift:3:5: error: cannot find 'x' in scope\n    let y = x\n").message.contains("let y") {
+    failures += 1; print("  ✗ compiler error swallowed the source line under it")
+}
 expect("no message at all falls back to the generic line",
        BuildErrorClassifier.classify("** BUILD FAILED **\n").message, contains: "Check the build log")
 

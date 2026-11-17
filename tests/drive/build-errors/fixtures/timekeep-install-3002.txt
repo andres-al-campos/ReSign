@@ -1,0 +1,14 @@
+=== build.sh ===
+→ xcodebuild (Timekeep, Debug, signed)
+** BUILD SUCCEEDED **
+✓ Built & signed: build/Timekeep.app
+→ Installing to device 00000000-0000-0000-0000-000000000000
+ERROR: Failed to install the app on the device. (com.apple.dt.CoreDeviceError error 3002 (0xBBA))
+  install attempt 1 failed (transient device-link error); retrying...
+ERROR: Failed to install the app on the device. (com.apple.dt.CoreDeviceError error 3002 (0xBBA))
+  install attempt 2 failed (transient device-link error); retrying...
+ERROR: Failed to install the app on the device. (com.apple.dt.CoreDeviceError error 3002 (0xBBA))
+error: couldn't install to the iPhone (tried 3 times). Unlock it and keep it
+       awake, on the same Wi-Fi as this Mac or plugged in, then run ./build.sh
+       again. devicectl's own error is above; the signed .app is at
+       build/Timekeep.app if you would rather install it from Xcode.

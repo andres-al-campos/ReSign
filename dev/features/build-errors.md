@@ -1,6 +1,6 @@
 # Build failure messages
 
-Updated 2026-10-25 11:38, at 1.6.
+Updated 2026-11-16 23:40, at 1.7.
 
 When a rebuild fails, ReSign's message says what went wrong and how to fix it,
 and labels the failure Build or Install.
@@ -13,6 +13,9 @@ and labels the failure Build or Install.
 - When nothing matches and a project's build.sh exits with its own message
   (its `die()`), that message is shown, headline and fix, rather than "Check
   the build log".
+- A build.sh `error:` line is shown with the indented lines under it, where
+  the fix is, so a generic devicectl line above it (like error 3002) isn't
+  the message.
 - A failure after the script prints "Installing to …" is labelled Install.
 
 ## How to get to it

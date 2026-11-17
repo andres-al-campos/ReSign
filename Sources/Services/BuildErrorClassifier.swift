@@ -88,10 +88,17 @@ enum BuildErrorClassifier {
                 return (String(line.drop(while: { $0 == " " }).prefix(200)), .generic)
             }
         }
-        // Extract last error: line
         let lines = output.components(separatedBy: "\n")
-        if let errorLine = lines.last(where: { $0.contains("error:") }) {
-            return (String(errorLine.prefix(200)), .generic)
+        if let index = lines.lastIndex(where: { $0.contains("error:") }) {
+            var message = [lines[index]]
+            // A build.sh error starts its line and goes on in indented lines, which
+            // hold the fix. A compiler's error starts with its file path, and the
+            // indented lines under it are source code, so those stay out.
+            if lines[index].hasPrefix("error:") {
+                message += lines[(index + 1)...].prefix { $0.hasPrefix(" ") && !$0.allSatisfy(\.isWhitespace) }
+            }
+            let joined = message.map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: " ")
+            return (String(joined.prefix(300)), .generic)
         }
         // The build script exited non-zero with its own message (a die() in
         // build.sh). It already says what went wrong and how to fix it; a
