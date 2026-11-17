@@ -151,14 +151,25 @@ XCB_ARGS=(
     build
 )
 
+# Judged by xcodebuild's status, not the filter's: a failed build that went on
+# would find the .app an earlier build left in $DERIVED_DATA and run that. Each
+# `|| BUILD_STATUS=` keeps set -e from ending the script before the message below;
+# pipefail makes the pipeline fail when xcodebuild does, whatever grep matched.
+set -o pipefail
+BUILD_STATUS=0
 if [ "$VERBOSE" = "1" ]; then
-    xcodebuild "${XCB_ARGS[@]}"
+    xcodebuild "${XCB_ARGS[@]}" || BUILD_STATUS=$?
 elif command -v xcbeautify >/dev/null 2>&1; then
-    xcodebuild "${XCB_ARGS[@]}" | xcbeautify
+    xcodebuild "${XCB_ARGS[@]}" | xcbeautify || BUILD_STATUS=${PIPESTATUS[0]}
 else
     xcodebuild "${XCB_ARGS[@]}" 2>&1 \
         | grep -E "(error|warning): |\*\* BUILD (SUCCEEDED|FAILED) \*\*" \
-        || true
+        || BUILD_STATUS=${PIPESTATUS[0]}
+fi
+if [ "$BUILD_STATUS" -ne 0 ]; then
+    echo "error: the build failed; its errors are above. Re-run with -v for the full"
+    echo "       xcodebuild output, fix the first error, then run ./build.sh again."
+    exit 1
 fi
 
 APP_PATH="$DERIVED_DATA/Build/Products/$CONFIG/$APP_NAME.app"
