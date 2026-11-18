@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Law: a Mac app's release ships as a DMG, never a zip. Opening a DMG shows the
+# Lint: a Mac app's release ships as a DMG, never a zip. Opening a DMG shows the
 # app beside an Applications shortcut, so a download gets installed; a zip
 # leaves the app in Downloads, where it gets run from instead.
 set -euo pipefail

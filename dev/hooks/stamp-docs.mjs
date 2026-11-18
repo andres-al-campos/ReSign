@@ -1,7 +1,7 @@
 // Pre-commit: stamps the docs this commit changes, so nobody writes a stamp by hand.
 //
 //   node stamp-docs.mjs <version file>           the pre-commit hook
-//   node stamp-docs.mjs --check <version file>   the law: checks the stamps in the working tree
+//   node stamp-docs.mjs --check <version file>   the lint: checks the stamps in the working tree
 //
 // The version file is where the app's version lives: VERSION (plain text), a .json file with a
 // "version" field (package.json, manifest.json), a pyproject.toml's version, or an Xcode project's MARKETING_VERSION
@@ -18,10 +18,10 @@
 // - A Call's "Applies *Name*." has to name a Principle, or the commit stops: one in the project's
 //   AGENTS.md or in the AGENTS.md of a folder above it (walled_garden/AGENTS.md for its apps).
 //   Principles cascade: a shared one holds in each project below it unless that project's
-//   AGENTS.md refines it or names an exception. The laws check this line by line too, but only
+//   AGENTS.md refines it or names an exception. The doc-stamps lint checks this line by line too, but only
 //   here is a citation wrapped across two lines read whole.
 //
-// --check is what each project's doc-stamps law runs, to catch a commit made with the hook off:
+// --check is what each project's doc-stamps lint runs, to catch a commit made with the hook off:
 // every doc is stamped, every Principle and Call starts with a time and version, each time is
 // real and not in the future, each version is one the version file has had, and each cited
 // Principle exists.

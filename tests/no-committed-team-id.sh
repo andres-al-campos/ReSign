@@ -1,5 +1,5 @@
 #!/bin/bash
-# Law: no tracked file sets DEVELOPMENT_TEAM to a real Team ID. It is
+# Lint: no tracked file sets DEVELOPMENT_TEAM to a real Team ID. It is
 # machine-specific and belongs in the gitignored Config.xcconfig.
 
 cd "$(dirname "$0")/.."

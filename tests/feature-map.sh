@@ -1,5 +1,5 @@
 #!/bin/bash
-# Law: the feature map matches its files and their checks.
+# Lint: the feature map matches its files and their checks.
 #
 # The map is what "done" is checked against, so it can't drift: every row in
 # dev/features/README.md has a file, every file has a row, and every file's

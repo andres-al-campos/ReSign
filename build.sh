@@ -4,8 +4,8 @@
 # Usage:
 #   ./build.sh                 # Release build, install to /Applications, relaunch (default)
 #   ./build.sh --fast          # fast: Debug build, run from ./build (quick iteration)
-#   ./build.sh check           # run the laws in tests/ (no build)
-#   ./build.sh check --drives  # the laws, then every drive in tests/drive/
+#   ./build.sh check           # run the checks in tests/ (no build)
+#   ./build.sh check --drives  # the checks, then every drive in tests/drive/
 #   ./build.sh drive [name]    # run every feature check in tests/drive/, or one
 #   ./build.sh -v              # verbose xcodebuild output
 #   ./build.sh -h              # show this help
@@ -45,8 +45,8 @@ Usage:
   ./build.sh                 Release build, install to /Applications, relaunch (default)
   ./build.sh --fast          fast: Debug build, run from ./build (quick iteration)
   ./build.sh --no-install    Release build, stage into ./build, no install/launch (for release.sh)
-  ./build.sh check           run the laws in tests/ (no build)
-  ./build.sh check --drives  the laws, then every drive in tests/drive/
+  ./build.sh check           run the checks in tests/ (no build)
+  ./build.sh check --drives  the checks, then every drive in tests/drive/
   ./build.sh drive [name]    run every feature check in tests/drive/, or one
   ./build.sh -v              verbose xcodebuild output
   ./build.sh -h              show this help
@@ -93,8 +93,8 @@ fi
 
 if [ "$MODE" = "check" ]; then
     failed=0
-    for law in tests/*.sh; do
-        "$law" || failed=1
+    for check in tests/*.sh; do
+        "$check" || failed=1
     done
     if [ "$DRIVES" = 1 ]; then
         drive "" || failed=1

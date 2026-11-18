@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runs ./build.sh check before a push: types, tests and laws, no window or simulator.
+# Runs ./build.sh check before a push: types, tests and lints, no window or simulator.
 # A push is the one place every change passes through, so the suite runs about once a
 # feature instead of once a change. A push that changes only docs (*.md, docs/) and the
 # synced hooks (dev/hooks/) runs just the doc-stamps check: the suite tests code, and a
