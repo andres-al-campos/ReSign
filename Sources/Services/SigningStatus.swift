@@ -93,29 +93,52 @@ enum XcodeAccounts {
         }
     }
 
+    /// Keeps at it until Accounts has been pressed in a Settings window, since a
+    /// fresh Xcode comes to the front before its menus take ⌘, (seen on 27.1,
+    /// where a single ⌘, half a second after activation left the welcome window).
     private static func openSettings(pid: pid_t) async {
-        // A cold launch takes several seconds before Xcode's menus accept ⌘,.
-        let deadline = Date.now.addingTimeInterval(20)
+        let axApp = AXUIElementCreateApplication(pid)
+        let deadline = Date.now.addingTimeInterval(30)
+        var lastCommaAt = Date.distantPast
         while Date.now < deadline {
-            if let app = NSRunningApplication(processIdentifier: pid), app.isFinishedLaunching, app.isActive { break }
-            try? await Task.sleep(for: .milliseconds(250))
+            let windows = windows(of: axApp)
+            // Settings is the only Xcode window with an Accounts button in reach.
+            for window in windows {
+                if let accounts = findElement(titled: "Accounts", in: window, depth: 0),
+                   AXUIElementPerformAction(accounts, kAXPressAction as CFString) == .success { return }
+            }
+            // ⌘, goes to the frontmost app, so it waits for Xcode to be in front
+            // with a window up, and for Xcode to answer the last one.
+            if !windows.isEmpty, NSRunningApplication(processIdentifier: pid)?.isActive == true,
+               Date.now.timeIntervalSince(lastCommaAt) > 2 {
+                pressCommandComma()
+                lastCommaAt = .now
+            }
+            try? await Task.sleep(for: .milliseconds(300))
         }
-        try? await Task.sleep(for: .milliseconds(500))
+        let titles = windows(of: axApp).map { title(of: $0) ?? "untitled" }
+        NSLog("ReSign: Xcode Settings → Accounts didn't open in 30 s; Xcode windows: %@", titles.joined(separator: ", "))
+    }
 
+    private static func pressCommandComma() {
         let source = CGEventSource(stateID: .hidSystemState)
         for keyDown in [true, false] {
             let event = CGEvent(keyboardEventSource: source, virtualKey: 0x2B, keyDown: keyDown) // 0x2B = comma
             event?.flags = .maskCommand
             event?.post(tap: .cghidEventTap)
         }
+    }
 
-        // Backstop for a running Xcode that never re-read the preset pane.
-        try? await Task.sleep(for: .seconds(1))
-        let axApp = AXUIElementCreateApplication(pid)
-        var window: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &window) == .success,
-              let window, let accounts = findElement(titled: "Accounts", in: window as! AXUIElement, depth: 0) else { return }
-        AXUIElementPerformAction(accounts, kAXPressAction as CFString)
+    private static func windows(of app: AXUIElement) -> [AXUIElement] {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value)
+        return value as? [AXUIElement] ?? []
+    }
+
+    private static func title(of element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &value)
+        return value as? String
     }
 
     private static func findElement(titled title: String, in element: AXUIElement, depth: Int) -> AXUIElement? {
