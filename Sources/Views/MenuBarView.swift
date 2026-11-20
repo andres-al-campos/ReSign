@@ -73,7 +73,10 @@ struct MenuBarView: View {
         .frame(width: 300)
         // Xcode may have been updated since the last check; reading its
         // version is local and quick, so clear a stale banner on open.
-        .onAppear { Task { await scheduler.checkXcodeCompatibility(phone: false) } }
+        .onAppear {
+            scheduler.popupOpened()
+            Task { await scheduler.checkXcodeCompatibility(phone: false) }
+        }
         .onHover { inside in
             // macOS sometimes shows a resize cursor over dividers / scroll
             // edges in a MenuBarExtra window. Force the arrow cursor while

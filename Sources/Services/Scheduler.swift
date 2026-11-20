@@ -384,6 +384,12 @@ final class Scheduler {
         scheduleSignInPoll()
     }
 
+    /// The popup shows the signed-out banner, so opening it is worth a fresh
+    /// look rather than up to a minute of the last poll's answer.
+    func popupOpened() {
+        reactToSigningStateChange()
+    }
+
     /// Called on each sign-in poll. If the signing state flips from signed-out to signed-in,
     /// clear the notification and rebuild anything we had queued.
     private func reactToSigningStateChange() {
