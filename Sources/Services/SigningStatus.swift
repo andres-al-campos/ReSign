@@ -110,11 +110,11 @@ enum XcodeAccounts {
             // ⌘, goes to the frontmost app, so it waits for Xcode to be in front
             // with a window up, and for Xcode to answer the last one.
             if !windows.isEmpty, NSRunningApplication(processIdentifier: pid)?.isActive == true,
-               Date.now.timeIntervalSince(lastCommaAt) > 2 {
+               Date.now.timeIntervalSince(lastCommaAt) > 0.5 {
                 pressCommandComma()
                 lastCommaAt = .now
             }
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(100))
         }
         let titles = windows(of: axApp).map { title(of: $0) ?? "untitled" }
         NSLog("ReSign: Xcode Settings → Accounts didn't open in 30 s; Xcode windows: %@", titles.joined(separator: ", "))
