@@ -1,4 +1,5 @@
 import AppKit
+import os
 
 /// Checks whether Xcode / the keychain has a usable code-signing identity.
 ///
@@ -93,31 +94,41 @@ enum XcodeAccounts {
         }
     }
 
-    /// Keeps at it until Accounts has been pressed in a Settings window, since a
-    /// fresh Xcode comes to the front before its menus take ⌘, (seen on 27.1,
-    /// where a single ⌘, half a second after activation left the welcome window).
+    /// Presses ⌘, until Settings opens, since a fresh Xcode comes to the front
+    /// before its menus take it (seen on 27.1, where a single ⌘, half a second
+    /// after activation left the welcome window). It stops at the first new
+    /// window rather than at a found Accounts button: on 27.1 the button search seemed
+    /// never to match, and ⌘, kept landing on Xcode for the whole 30 seconds.
     private static func openSettings(pid: pid_t) async {
         let axApp = AXUIElementCreateApplication(pid)
         let deadline = Date.now.addingTimeInterval(30)
         var lastCommaAt = Date.distantPast
+        var windowsBeforeComma: [AXUIElement]?
         while Date.now < deadline {
             let windows = windows(of: axApp)
-            // Settings is the only Xcode window with an Accounts button in reach.
-            for window in windows {
-                if let accounts = findElement(titled: "Accounts", in: window, depth: 0),
-                   AXUIElementPerformAction(accounts, kAXPressAction as CFString) == .success { return }
+            if let before = windowsBeforeComma,
+               let settings = windows.first(where: { window in !before.contains { CFEqual($0, window) } }) {
+                // The preset pane usually lands it on Accounts; this covers a
+                // running Xcode that never re-read it.
+                try? await Task.sleep(for: .milliseconds(300))
+                if let accounts = findElement(titled: "Accounts", in: settings, depth: 0) {
+                    AXUIElementPerformAction(accounts, kAXPressAction as CFString)
+                }
+                return
             }
             // ⌘, goes to the frontmost app, so it waits for Xcode to be in front
-            // with a window up, and for Xcode to answer the last one.
+            // with a window up.
             if !windows.isEmpty, NSRunningApplication(processIdentifier: pid)?.isActive == true,
                Date.now.timeIntervalSince(lastCommaAt) > 0.5 {
+                if windowsBeforeComma == nil { windowsBeforeComma = windows }
                 pressCommandComma()
                 lastCommaAt = .now
             }
             try? await Task.sleep(for: .milliseconds(100))
         }
         let titles = windows(of: axApp).map { title(of: $0) ?? "untitled" }
-        NSLog("ReSign: Xcode Settings → Accounts didn't open in 30 s; Xcode windows: %@", titles.joined(separator: ", "))
+        Logger(subsystem: "com.alejandro.ReSign", category: "accounts")
+            .error("Xcode Settings didn't open in 30 s; Xcode windows: \(titles.joined(separator: ", "), privacy: .public)")
     }
 
     private static func pressCommandComma() {

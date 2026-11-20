@@ -1,6 +1,6 @@
 # Rebuild after Xcode sign-in
 
-Updated 2026-11-20 15:22, at 1.7.
+Updated 2026-11-20 15:38, at 1.7.
 
 When Xcode has signed you out, the popup says so, and the menu bar icon stays
 as it was until a build is within a day. Then ReSign tells you once, skips the
@@ -76,8 +76,11 @@ used a 10-minute watch window, since shortened to 5.
   "No Accounts", the sign-in poll retries the queue every minute.
 - Opening Accounts on a fresh Xcode launch takes a few tries: Xcode comes to
   the front before its menus take ⌘,. ReSign presses ⌘, every half second while
-  Xcode is in front with a window up, until it has pressed Accounts in
-  Settings, for up to 30 seconds. Without Accessibility permission it only
+  Xcode is in front with a window up, until a new Xcode window (Settings)
+  appears, for up to 30 seconds. It stops at the window rather than at the
+  Accounts button: on Xcode 27.1 the button search seemed never to match, and the
+  presses carried on for the whole 30 seconds. Xcode still takes a second or
+  two on the welcome window after a fresh launch. Without Accessibility permission it only
   opens Xcode, and ⌘, then lands on Accounts.
 - What signs Xcode out is unknown; `sign-ins.log` is there to find out. Seen
   once in the system log, 2026-11-02, on Xcode 27.1, in an `xcodebuild` not
