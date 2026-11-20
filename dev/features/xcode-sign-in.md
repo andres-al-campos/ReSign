@@ -25,7 +25,8 @@ Every sign-out is recorded with what ran around it.
   Settings → Accounts.
 - After that click, the queued builds start about 2 seconds after the account
   appears in Xcode.
-- Without the click, they start within a minute of the sign-in.
+- Without the click, they start within a minute of the sign-in, or as soon
+  as the popup opens: opening it checks the sign-in on the spot.
 - The notification is cleared once the sign-in is detected.
 - A project ignored after it was queued is not rebuilt.
 
