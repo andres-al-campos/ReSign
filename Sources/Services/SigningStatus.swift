@@ -98,7 +98,7 @@ enum XcodeAccounts {
     /// before its menus take it (seen on 27.1, where a single ⌘, half a second
     /// after activation left the welcome window). It stops at the first new
     /// window rather than at a found Accounts button: on 27.1 the button search seemed
-    /// never to match, and ⌘, kept landing on Xcode for the whole 30 seconds.
+    /// never to match, and ⌘, kept landing on Xcode for about 10 seconds.
     private static func openSettings(pid: pid_t) async {
         let axApp = AXUIElementCreateApplication(pid)
         let deadline = Date.now.addingTimeInterval(30)

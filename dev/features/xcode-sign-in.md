@@ -79,7 +79,7 @@ used a 10-minute watch window, since shortened to 5.
   Xcode is in front with a window up, until a new Xcode window (Settings)
   appears, for up to 30 seconds. It stops at the window rather than at the
   Accounts button: on Xcode 27.1 the button search seemed never to match, and the
-  presses carried on for the whole 30 seconds. Xcode still takes a second or
+  presses carried on for about 10 seconds. Xcode still takes a second or
   two on the welcome window after a fresh launch. Without Accessibility permission it only
   opens Xcode, and ⌘, then lands on Accounts.
 - What signs Xcode out is unknown; `sign-ins.log` is there to find out. Seen
